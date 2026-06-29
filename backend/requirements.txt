@@ -1,0 +1,11 @@
+# Community Hero — Backend Dependencies (FREE TIER)
+# No Google Sheets / Drive credentials needed
+
+flask>=3.0.0
+flask-cors>=4.0.0
+openai>=1.0.0
+python-dotenv>=1.0.0
+Pillow>=10.0.0
+
+# SQLite is built into Python — no install needed
+# OpenStreetMap / Leaflet loaded from CDN in HTML — no install needed
