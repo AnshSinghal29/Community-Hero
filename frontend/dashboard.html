@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community Hero - Ghaziabad Civic Issues</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .section {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            padding: 16px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #e0e0e0;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        #map {
+            flex: 1;
+            min-height: 500px;
+        }
+
+        .issues-list {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+
+        .issue-card {
+            padding: 14px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-left: 4px solid #ccc;
+        }
+
+        .issue-card:hover {
+            background: #f9f9f9;
+        }
+
+        .issue-card.urgent {
+            border-left-color: #e74c3c;
+            background: #fdf5f5;
+        }
+
+        .issue-card.high {
+            border-left-color: #f39c12;
+            background: #fffaf5;
+        }
+
+        .issue-card.medium {
+            border-left-color: #3498db;
+            background: #f5f9ff;
+        }
+
+        .issue-card.low {
+            border-left-color: #27ae60;
+            background: #f5fff5;
+        }
+
+        .issue-category {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 4px;
+            background: #e8e8e8;
+            color: #333;
+            margin-bottom: 6px;
+            text-transform: capitalize;
+        }
+
+        .issue-priority {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 4px;
+            margin-left: 6px;
+            text-transform: uppercase;
+        }
+
+        .issue-priority.urgent {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .issue-priority.high {
+            background: #f39c12;
+            color: white;
+        }
+
+        .issue-priority.medium {
+            background: #3498db;
+            color: white;
+        }
+
+        .issue-priority.low {
+            background: #27ae60;
+            color: white;
+        }
+
+        .issue-description {
+            font-size: 13px;
+            color: #555;
+            margin: 6px 0;
+            line-height: 1.4;
+        }
+
+        .issue-location {
+            font-size: 12px;
+            color: #999;
+            margin-top: 6px;
+        }
+
+        .issue-card.selected {
+            background: #f0f7ff;
+            border-left-width: 6px;
+        }
+
+        .report-form {
+            padding: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #333;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        input[type="file"] {
+            padding: 8px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background: #764ba2;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding: 16px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: #999;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 99px;
+            text-transform: capitalize;
+        }
+        .badge-category { background: #eef2ff; color: #667eea; }
+        .badge-urgent { background: #ff4757; color: white; }
+        .badge-high { background: #ffa502; color: white; }
+        .badge-medium { background: #3d9bff; color: white; }
+        .badge-low { background: #2ed573; color: #111; }
+
+        .issue-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .issue-desc { font-size: 13px; color: #555; line-height: 1.4; margin: 4px 0; }
+        .issue-meta { display: flex; justify-content: space-between; font-size: 11px; color: #aaa; margin-top: 6px; }
+        .issue-card.active { background: #eef2ff; border-left-width: 6px; }
+
+        .reasoning-drawer { display: none; padding: 10px 14px; background: #f9f9f9; border-left: 4px solid #667eea; font-size: 12px; color: #555; line-height: 1.5; }
+        .reasoning-label { font-weight: 700; color: #667eea; margin-bottom: 4px; font-size: 11px; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: #bbb; }
+        .empty-icon { font-size: 40px; margin-bottom: 10px; }
+        .empty-text { font-size: 13px; line-height: 1.6; }
+
+        #modal.open { display: flex !important; }
+
+        .toast {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: white;
+            border-radius: 10px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            font-size: 13px;
+            min-width: 260px;
+            max-width: 360px;
+            animation: slideIn .2s ease;
+            border-left: 4px solid #667eea;
+        }
+        .toast-title { font-weight: 700; color: #333; }
+        .toast-msg { color: #777; margin-top: 2px; }
+        .toast.removing { opacity: 0; transform: translateX(20px); transition: all .25s ease; }
+        .toast-icon { font-size: 18px; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+        #btn-voice.recording { background: #ff4757 !important; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+    </style>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+<body>
+    <!-- API Status Bar -->
+    <div id="api-status-bar" style="display:flex;align-items:center;gap:8px;padding:6px 20px;background:#111;font-size:12px;color:#aaa;border-bottom:1px solid #222;">
+        <div id="api-status-dot" style="width:8px;height:8px;border-radius:50%;background:#ffa502;flex-shrink:0;"></div>
+        <span id="api-status-text">Connecting...</span>
+        <span style="margin-left:auto;color:#555;">Issues shown: <strong id="issues-count" style="color:#aaa;">0</strong></span>
+    </div>
+
+    <header>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+            <div>
+                <h1>🏛️ Community Hero</h1>
+                <p>AI-Powered Civic Issue Tracking for Ghaziabad</p>
+            </div>
+            <button id="btn-report" style="background:white;color:#667eea;border:none;padding:10px 20px;border-radius:6px;font-weight:700;cursor:pointer;font-size:14px;">+ Report New Issue</button>
+        </div>
+        <!-- Stats -->
+        <div class="stats" style="margin-top:16px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+            <div class="stat"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total Issues</div></div>
+            <div class="stat"><div class="stat-value" id="stat-urgent" style="color:#ff4757;">0</div><div class="stat-label">Urgent</div></div>
+            <div class="stat"><div class="stat-value" id="stat-high" style="color:#ffa502;">0</div><div class="stat-label">High</div></div>
+            <div class="stat"><div class="stat-value" id="stat-resolved" style="color:#2ed573;">0%</div><div class="stat-label">Resolved</div></div>
+        </div>
+        <!-- Filters -->
+        <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;">
+            <select id="filter-category" style="padding:6px 10px;border-radius:6px;border:none;font-size:13px;">
+                <option value="">All Categories</option>
+                <option value="pothole">🕳️ Pothole</option>
+                <option value="water_leak">💧 Water Leak</option>
+                <option value="streetlight">💡 Streetlight</option>
+                <option value="waste_management">🗑️ Waste</option>
+                <option value="other">🔧 Other</option>
+            </select>
+            <select id="filter-priority" style="padding:6px 10px;border-radius:6px;border:none;font-size:13px;">
+                <option value="">All Priorities</option>
+                <option value="urgent">🔴 Urgent</option>
+                <option value="high">🟠 High</option>
+                <option value="medium">🔵 Medium</option>
+                <option value="low">🟢 Low</option>
+            </select>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Map Section -->
+        <div class="section">
+            <div class="section-title">Issue Map <span style="font-size:11px;color:#999;font-weight:400;">(click map to report)</span></div>
+            <div id="map"></div>
+        </div>
+
+        <!-- Issues List -->
+        <div class="section">
+            <div class="section-title">Recent Issues</div>
+            <div class="issues-list" id="issues-list">
+                <div class="loading" id="loading">Loading issues...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast-container" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;"></div>
+
+    <!-- Report Modal -->
+    <div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:2000;overflow:auto;align-items:center;justify-content:center;">
+        <div class="report-form" style="margin:40px auto;max-width:540px;border-radius:16px;padding:28px;box-shadow:0 24px 60px rgba(0,0,0,0.4);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h2 style="font-size:20px;">📸 Report a Civic Issue</h2>
+                <button id="modal-close" style="background:none;border:none;font-size:22px;cursor:pointer;color:#999;width:auto;padding:0;">✕</button>
+            </div>
+            <form id="report-form">
+                <div class="form-group">
+                    <label>Photo of Issue</label>
+                    <input type="file" id="image" accept="image/*" required>
+                    <div id="img-preview" style="display:none;margin-top:10px;">
+                        <img id="img-preview-src" src="" alt="Preview" style="max-width:100%;border-radius:8px;max-height:200px;object-fit:cover;">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;justify-content:space-between;align-items:center;">
+                        <span>Description</span>
+                        <button type="button" id="btn-voice" title="Record voice report" style="background:#667eea;color:white;border:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;width:auto;">🎤 Voice</button>
+                    </label>
+                    <textarea id="description" placeholder="Describe the issue in detail..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Location Address</label>
+                    <input type="text" id="address" placeholder="e.g., Sector 7, Ghaziabad">
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-group">
+                        <label>Latitude</label>
+                        <input type="number" id="latitude" step="0.000001" placeholder="28.6692" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Longitude</label>
+                        <input type="number" id="longitude" step="0.000001" placeholder="77.0669" required>
+                    </div>
+                </div>
+                <!-- Analysis Result -->
+                <div id="analysis-result" style="display:none;background:#f0f7ff;border-radius:10px;padding:16px;margin:12px 0;border:1px solid #c7deff;">
+                    <div style="font-weight:700;margin-bottom:10px;color:#333;">🤖 AI Analysis Result</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
+                        <div><span style="color:#888;">Category:</span> <strong id="res-category">—</strong></div>
+                        <div><span style="color:#888;">Priority:</span> <span id="res-priority">—</span></div>
+                        <div><span style="color:#888;">Severity:</span> <strong id="res-severity">—</strong></div>
+                        <div><span style="color:#888;">Confidence:</span> <strong id="res-confidence">—</strong></div>
+                    </div>
+                    <div style="margin-top:10px;font-size:12px;color:#555;line-height:1.5;" id="res-reasoning"></div>
+                </div>
+                <button type="submit" id="btn-submit" style="margin-top:8px;">
+                    <span id="spinner" style="display:none;">⏳ </span>
+                    <span id="btn-text">🚀 Analyze &amp; Submit</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+
+        function loadIssues() {
+            fetch(`${BACKEND_URL}/api/issues`)
+                .then(res => res.json())
+                .then(data => {
+                    issues = data;
+                    renderIssues();
+                    updateStats();
+                    renderMarkers();
+                })
+                .catch(err => console.error('Error loading issues:', err));
+        }
+
+        function renderIssues() {
+            const list = document.getElementById('issues-list');
+            list.innerHTML = '';
+
+            issues.forEach(issue => {
+                const card = document.createElement('div');
+                card.className = `issue-card ${issue.priority}`;
+                card.innerHTML = `
+                    <div>
+                        <span class="issue-category">${issue.category}</span>
+                        <span class="issue-priority ${issue.priority}">${issue.priority}</span>
+                    </div>
+                    <div class="issue-description">${issue.description || issue.reasoning}</div>
+                    <div class="issue-location">📍 ${issue.address}</div>
+                `;
+                card.addEventListener('click', () => {
+                    centerMapOnIssue(issue);
+                });
+                list.appendChild(card);
+            });
+        }
+
+        function renderMarkers() {
+            markers.forEach(m => m.setMap(null));
+            markers = [];
+
+            const colors = {
+                urgent: '#e74c3c',
+                high: '#f39c12',
+                medium: '#3498db',
+                low: '#27ae60'
+            };
+
+            issues.forEach(issue => {
+                const marker = new google.maps.Marker({
+                    position: {
+                        lat: parseFloat(issue.latitude),
+                        lng: parseFloat(issue.longitude)
+                    },
+                    map: map,
+                    title: issue.category,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 10,
+                        fillColor: colors[issue.priority],
+                        fillOpacity: 0.8,
+                        strokeColor: '#fff',
+                        strokeWeight: 2
+                    }
+                });
+
+                marker.addListener('click', () => {
+                    const infoWindow = new google.maps.InfoWindow({
+                        content: `<div style="padding:8px;"><strong>${issue.category}</strong><br>${issue.address}</div>`
+                    });
+                    infoWindow.open(map, marker);
+                });
+
+                markers.push(marker);
+            });
+        }
+
+        function centerMapOnIssue(issue) {
+            map.setCenter({
+                lat: parseFloat(issue.latitude),
+                lng: parseFloat(issue.longitude)
+            });
+            map.setZoom(16);
+        }
+
+        function updateStats() {
+            const total = issues.length;
+            const urgent = issues.filter(i => i.priority === 'urgent').length;
+            const high = issues.filter(i => i.priority === 'high').length;
+            const resolved = issues.filter(i => i.status === 'resolved').length;
+
+            document.getElementById('total-issues').textContent = total;
+            document.getElementById('urgent-count').textContent = urgent;
+            document.getElementById('high-count').textContent = high;
+            document.getElementById('resolution-rate').textContent = total > 0 ? Math.round((resolved / total) * 100) : 0 + '%';
+        }
+
+        // Form submission
+        document.getElementById('report-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData();
+            formData.append('image', document.getElementById('image').files[0]);
+            formData.append('description', document.getElementById('description').value);
+            formData.append('latitude', parseFloat(document.getElementById('latitude').value));
+            formData.append('longitude', parseFloat(document.getElementById('longitude').value));
+
+            const submitBtn = document.getElementById('submit-btn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Analyzing...';
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/report`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Report submitted! Agent analysis: ' + result.analysis.priority);
+                    document.getElementById('modal').style.display = 'none';
+                    document.getElementById('report-form').reset();
+                    loadIssues();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (err) {
+                alert('Error submitting report: ' + err.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Submit Report';
+            }
+        });
+
+        // Close modal
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('modal')) {
+                document.getElementById('modal').style.display = 'none';
+            }
+        });
+
+    const BACKEND_URL = "http://localhost:5000";
+    const GHAZIABAD_CENTER = [28.6692, 77.0669];
+    let map, issues = [], markers = [], predictionOverlays = [];
+    let selectedCard = null;
+    let autoRefreshTimer = null;
+
+    const PRIORITY_COLORS = {
+      urgent: '#ff4757',
+      high:   '#ffa502',
+      medium: '#3d9bff',
+      low:    '#2ed573'
+    };
+
+    const CATEGORY_EMOJI = {
+      pothole:          '🕳️',
+      water_leak:       '💧',
+      streetlight:      '💡',
+      waste_management: '🗑️',
+      other:            '🔧'
+    };
+
+    // ─────────────────────────────────────────────────────────────
+    // MAP INIT — Leaflet + OpenStreetMap (FREE, no API key)
+    // ─────────────────────────────────────────────────────────────
+    function initMap() {
+      map = L.map('map', { zoomControl: true }).setView(GHAZIABAD_CENTER, 13);
+
+      // Dark tile layer (CartoDB Dark Matter — free, no API key)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '\u00a9 <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors \u00a9 <a href="https://carto.com/">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(map);
+
+      // Click on map → pre-fill coords + open modal
+      map.on('click', (e) => {
+        document.getElementById('latitude').value  = e.latlng.lat.toFixed(6);
+        document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+        openModal();
+      });
+
+      loadAll();
+      startAutoRefresh();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // LOAD DATA
+    // ─────────────────────────────────────────────────────────────
+    async function loadAll() {
+      await Promise.all([loadIssues(), loadStats(), loadPredictions()]);
+      checkApiHealth();
+    }
+
+    async function loadIssues() {
+      const cat = document.getElementById('filter-category').value;
+      const pri = document.getElementById('filter-priority').value;
+
+      let url = `${BACKEND_URL}/api/issues`;
+      const params = [];
+      if (cat) params.push(`category=${cat}`);
+      if (pri) params.push(`priority=${pri}`);
+      if (params.length) url += '?' + params.join('&');
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        issues = await res.json();
+        renderIssueList(issues);
+        renderMarkers(issues);
+        document.getElementById('issues-count').textContent = issues.length;
+      } catch (e) {
+        console.error('[ERROR] Could not load issues:', e);
+        renderIssueList([]);
+      }
+    }
+
+    async function loadStats() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/stats`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const s = await res.json();
+        animateNumber('stat-total',    s.total    ?? 0);
+        animateNumber('stat-urgent',   s.urgent   ?? 0);
+        animateNumber('stat-high',     s.high     ?? 0);
+        document.getElementById('stat-resolved').textContent = (s.resolved_pct ?? 0) + '%';
+      } catch (e) {
+        console.error('[ERROR] Could not load stats:', e);
+        ['stat-total','stat-urgent','stat-high','stat-resolved'].forEach(id => {
+          document.getElementById(id).textContent = '—';
+        });
+      }
+    }
+
+    async function loadPredictions() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/predict`);
+        if (!res.ok) return;
+        const data = await res.json();
+        renderPredictions(data.high_risk_locations || []);
+      } catch (e) {
+        // Predictions are optional
+      }
+    }
+
+    async function checkApiHealth() {
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/health`);
+        const dot = document.getElementById('api-status-dot');
+        const txt = document.getElementById('api-status-text');
+        if (res.ok) {
+          dot.style.background = '#2ed573';
+          txt.textContent = 'API Online';
+        } else {
+          dot.style.background = '#ff4757';
+          txt.textContent = 'API Error';
+        }
+      } catch {
+        document.getElementById('api-status-dot').style.background = '#ffa502';
+        document.getElementById('api-status-text').textContent = 'Backend Offline';
+      }
+    }
+
+    function startAutoRefresh() {
+      autoRefreshTimer = setInterval(() => {
+        loadStats();
+        loadIssues();
+      }, 5000);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // RENDER ISSUES LIST
+    // ─────────────────────────────────────────────────────────────
+    
+    function renderIssueList(list) {
+      const container = document.getElementById('issues-list');
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">🗺️</div>
+            <div class="empty-text">No issues found.<br>Click the map or "Report New Issue" to add one.</div>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = '';
+
+      list.forEach((issue, idx) => {
+        const emoji = CATEGORY_EMOJI[issue.category] || '🔧';
+        const catLabel = (issue.category || 'other').replace(/_/g, ' ');
+        const ts = issue.timestamp ? new Date(issue.timestamp).toLocaleDateString('en-IN', { day:'numeric', month:'short' }) : '';
+
+        const card = document.createElement('div');
+        card.className = `issue-card ${issue.priority}`;
+        card.id = `issue-card-${idx}`;
+        card.innerHTML = `
+          <div class="issue-card-top">
+            <span class="badge badge-category">${emoji} ${catLabel}</span>
+            <span class="badge badge-${issue.priority}">${issue.priority}</span>
+          </div>
+          <div class="issue-desc">${issue.description || issue.reasoning || 'No description'}</div>
+          <div class="issue-meta">
+            <span>📍 ${issue.address || (issue.latitude ? issue.latitude.toFixed(4) + ', ' + issue.longitude.toFixed(4) : '')}</span>
+            <span>${ts}</span>
+          </div>
+        `;
+
+        // Reasoning drawer (collapsible)
+        const drawer = document.createElement('div');
+        drawer.className = 'reasoning-drawer';
+        drawer.id = `reasoning-${idx}`;
+        if (issue.reasoning) {
+          drawer.innerHTML = `
+            <div class="reasoning-label">🤖 Agent Reasoning</div>
+            ${issue.reasoning}
+            ${issue.thinking ? '<br><br><strong style="color:var(--clr-purple3)">Extended Thinking:</strong><br>' + issue.thinking : ''}
+          `;
+        }
+
+        card.addEventListener('click', () => {
+          const isOpen = drawer.style.display === 'block';
+          drawer.style.display = isOpen ? 'none' : 'block';
+
+          if (selectedCard) selectedCard.classList.remove('active');
+          card.classList.add('active');
+          selectedCard = card;
+
+          if (map && issue.latitude && issue.longitude) {
+            map.setView([parseFloat(issue.latitude), parseFloat(issue.longitude)], 16);
+          }
+        });
+
+        container.appendChild(card);
+        container.appendChild(drawer);
+      });
+    }
+    
+
+    // ─────────────────────────────────────────────────────────────
+    // RENDER MAP MARKERS (Leaflet circleMarkers)
+    // ─────────────────────────────────────────────────────────────
+    function renderMarkers(list) {
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+
+      list.forEach(issue => {
+        const lat = parseFloat(issue.latitude);
+        const lng = parseFloat(issue.longitude);
+        if (!lat || !lng) return;
+
+        const color = PRIORITY_COLORS[issue.priority] || '#888';
+        const emoji = CATEGORY_EMOJI[issue.category] || '🔧';
+        const catLabel = (issue.category || 'other').replace(/_/g, ' ');
+
+        const marker = L.circleMarker([lat, lng], {
+          radius: 11,
+          fillColor: color,
+          color: '#ffffff',
+          weight: 2,
+          opacity: 0.9,
+          fillOpacity: 0.85
+        }).bindPopup(`
+          <div style="font-family:Inter,sans-serif;padding:4px 0;min-width:180px">
+            <strong>${emoji} ${catLabel}</strong>
+            <div style="margin-top:4px;font-size:12px;color:#555">${issue.address || 'No address'}</div>
+            <div style="margin-top:6px">
+              <span style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;text-transform:uppercase">${issue.priority}</span>
+            </div>
+            ${issue.reasoning ? `<div style="margin-top:8px;font-size:11px;color:#777;line-height:1.4">${issue.reasoning.slice(0,120)}...</div>` : ''}
+          </div>
+        `);
+
+        marker.addTo(map);
+        markers.push(marker);
+      });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // RENDER PREDICTIONS (Leaflet circles — dashed yellow)
+    // ─────────────────────────────────────────────────────────────
+    function renderPredictions(predictions) {
+      predictionOverlays.forEach(o => map.removeLayer(o));
+      predictionOverlays = [];
+
+      predictions.forEach(p => {
+        const lat = parseFloat(p.latitude);
+        const lng = parseFloat(p.longitude);
+
+        const circle = L.circle([lat, lng], {
+          radius: 80,
+          color: '#ffd700',
+          weight: 2,
+          dashArray: '6 4',
+          fillColor: '#ffd700',
+          fillOpacity: 0.08
+        }).bindPopup(`
+          <div style="font-family:Inter,sans-serif;padding:4px 0">
+            <strong>⚠️ Predicted Risk: ${p.category}</strong>
+            <div style="margin-top:4px;font-size:12px;color:#555">${p.reason || ''}</div>
+            <div style="margin-top:6px;font-size:11px">Confidence: ${Math.round((p.confidence||0)*100)}%</div>
+          </div>
+        `);
+
+        // Yellow 'P' label marker
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="width:22px;height:22px;border-radius:50%;border:2px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#ffd700;background:rgba(0,0,0,.5)">P</div>`,
+          iconSize: [22, 22],
+          iconAnchor: [11, 11]
+        });
+        const marker = L.marker([lat, lng], { icon }).bindPopup(`
+          <div style="font-family:Inter,sans-serif;padding:4px 0">
+            <strong>⚠️ Predicted Risk: ${p.category}</strong>
+            <div style="margin-top:4px;font-size:12px;color:#555">${p.reason || ''}</div>
+            <div style="margin-top:6px;font-size:11px">Confidence: ${Math.round((p.confidence||0)*100)}%</div>
+          </div>
+        `);
+
+        circle.addTo(map);
+        marker.addTo(map);
+        predictionOverlays.push(circle, marker);
+      });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // REPORT FORM
+    // ─────────────────────────────────────────────────────────────
+    function openModal() {
+      document.getElementById('modal').classList.add('open');
+      document.getElementById('analysis-result').style.display = 'none';
+      document.getElementById('report-form').style.display = '';
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('open');
+      document.getElementById('report-form').reset();
+      document.getElementById('img-preview').style.display = 'none';
+      document.getElementById('analysis-result').style.display = 'none';
+    }
+
+    document.getElementById('btn-report').addEventListener('click', openModal);
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('modal').addEventListener('click', (e) => {
+      if (e.target === document.getElementById('modal')) closeModal();
+    });
+
+    // Image preview
+    document.getElementById('image').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const url = URL.createObjectURL(file);
+      document.getElementById('img-preview-src').src = url;
+      document.getElementById('img-preview').style.display = 'block';
+    });
+
+    // Form submit
+    document.getElementById('report-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const image = document.getElementById('image').files[0];
+      const desc  = document.getElementById('description').value.trim();
+      const lat   = document.getElementById('latitude').value;
+      const lng   = document.getElementById('longitude').value;
+
+      if (!image) return showToast('error', 'Missing Image', 'Please select a photo of the issue.');
+      if (!desc)  return showToast('error', 'Missing Description', 'Please describe the issue.');
+      if (!lat || !lng) return showToast('error', 'Missing Location', 'Please set a location (click the map or enter coordinates).');
+
+      setSubmitting(true);
+
+      const formData = new FormData();
+      formData.append('image', image);
+      formData.append('description', desc);
+      formData.append('latitude', lat);
+      formData.append('longitude', lng);
+      formData.append('address', document.getElementById('address').value.trim());
+
+      try {
+        const res = await fetch(`${BACKEND_URL}/api/report`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showAnalysisResult(data.analysis);
+          showToast('success', 'Issue Reported!', `ID: ${data.report_id} — Priority: ${data.analysis?.priority || '?'}`);
+          document.getElementById('report-form').style.display = 'none';
+
+          // Refresh data
+          setTimeout(() => { loadIssues(); loadStats(); }, 1000);
+        } else {
+          showToast('error', 'Submission Failed', data.error || 'Unknown error');
+        }
+      } catch (err) {
+        showToast('error', 'Network Error', err.message);
+      } finally {
+        setSubmitting(false);
+      }
+    });
+
+    function setSubmitting(loading) {
+      const btn = document.getElementById('btn-submit');
+      const spinner = document.getElementById('spinner');
+      const btnText = document.getElementById('btn-text');
+      btn.disabled = loading;
+      spinner.style.display = loading ? 'block' : 'none';
+      btnText.textContent = loading ? 'Analyzing with Claude AI...' : '🚀 Analyze & Submit';
+    }
+
+    function showAnalysisResult(analysis) {
+      if (!analysis) return;
+      const r = document.getElementById('analysis-result');
+      r.style.display = 'block';
+
+      document.getElementById('res-category').textContent = (analysis.category || '—').replace(/_/g, ' ');
+      document.getElementById('res-priority').innerHTML = `<span class="badge badge-${analysis.priority}">${analysis.priority || '—'}</span>`;
+      document.getElementById('res-severity').textContent = `${analysis.severity_score || '—'}/5`;
+      document.getElementById('res-confidence').textContent = analysis.confidence_overall ? Math.round(analysis.confidence_overall * 100) + '%' : '—';
+      document.getElementById('res-reasoning').textContent = analysis.reasoning || '';
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // VOICE INPUT
+    // ─────────────────────────────────────────────────────────────
+    (function setupVoice() {
+      const btn = document.getElementById('btn-voice');
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        btn.title = 'Voice not supported in this browser';
+        btn.style.opacity = '.4';
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-IN';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      let recording = false;
+
+      btn.addEventListener('click', () => {
+        if (recording) {
+          recognition.stop();
+        } else {
+          recognition.start();
+          btn.classList.add('recording');
+          btn.title = 'Recording... Click to stop';
+          recording = true;
+        }
+      });
+
+      recognition.onresult = (e) => {
+        const transcript = e.results[0][0].transcript;
+        document.getElementById('description').value = transcript;
+        showToast('info', 'Voice Captured', `"${transcript.slice(0,80)}${transcript.length > 80 ? '...' : ''}"`);
+      };
+
+      recognition.onend = () => {
+        btn.classList.remove('recording');
+        btn.title = 'Record voice report';
+        recording = false;
+      };
+
+      recognition.onerror = (e) => {
+        btn.classList.remove('recording');
+        recording = false;
+        if (e.error !== 'no-speech') {
+          showToast('error', 'Voice Error', e.error);
+        }
+      };
+    })();
+
+    // ─────────────────────────────────────────────────────────────
+    // FILTERS
+    // ─────────────────────────────────────────────────────────────
+    document.getElementById('filter-priority').addEventListener('change', loadIssues);
+    document.getElementById('filter-category').addEventListener('change', loadIssues);
+
+    // ─────────────────────────────────────────────────────────────
+    // TOAST NOTIFICATIONS
+    // ─────────────────────────────────────────────────────────────
+    
+    function showToast(type, title, msg) {
+      const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+      const container = document.getElementById('toast-container');
+
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+        <div>
+          <div class="toast-title">${title}</div>
+          <div class="toast-msg">${msg}</div>
+        </div>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.classList.add('removing');
+        setTimeout(() => toast.remove(), 250);
+      }, 4000);
+    }
+    
+
+    // ─────────────────────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────────────────────
+    function animateNumber(id, target) {
+      const el = document.getElementById(id);
+      const current = parseInt(el.textContent) || 0;
+      if (current === target) return;
+      const step = target > current ? 1 : -1;
+      const steps = Math.min(Math.abs(target - current), 30);
+      let i = 0;
+      const timer = setInterval(() => {
+        el.textContent = Math.round(current + (step * (i / steps) * Math.abs(target - current)));
+        if (++i > steps) { el.textContent = target; clearInterval(timer); }
+      }, 20);
+    }
+
+  
+    window.addEventListener("load", initMap);
+  </script>
+</body>
+</html>
