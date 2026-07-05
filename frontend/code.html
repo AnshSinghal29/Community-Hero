@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Community Hero | Cyber-Guardian Command Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary-fixed": "#e6deff",
+            "border": "#2A2F4A",
+            "on-primary-fixed-variant": "#4500d8",
+            "error-container": "#93000a",
+            "secondary-fixed-dim": "#ddb7ff",
+            "primary-container": "#6c47ff",
+            "surface-container-highest": "#323440",
+            "on-primary": "#2f009b",
+            "surface": "#151829",
+            "on-surface-variant": "#c9c3d9",
+            "low": "#00FF85",
+            "surface-dim": "#11131e",
+            "on-primary-fixed": "#1b0063",
+            "tertiary-container": "#c6277b",
+            "outline-variant": "#484556",
+            "tertiary-fixed-dim": "#ffb0cd",
+            "on-error": "#690005",
+            "primary-fixed-dim": "#c9beff",
+            "on-surface": "#e1e1f2",
+            "primary": "#c9beff",
+            "on-tertiary-fixed-variant": "#8c0053",
+            "surface-bright": "#373845",
+            "on-tertiary-fixed": "#3e0022",
+            "error": "#ffb4ab",
+            "secondary-fixed": "#f0dbff",
+            "surface-container-low": "#191b26",
+            "on-error-container": "#ffdad6",
+            "on-tertiary": "#640039",
+            "inverse-primary": "#5e35f1",
+            "urgent": "#FF2E4D",
+            "tertiary-fixed": "#ffd9e4",
+            "on-secondary-fixed-variant": "#6900b3",
+            "surface-tint": "#c9beff",
+            "inverse-surface": "#e1e1f2",
+            "background": "#11131e",
+            "text-muted": "#8892A4",
+            "outline": "#938ea2",
+            "tertiary": "#ffb0cd",
+            "card": "#1C2035",
+            "inverse-on-surface": "#2e303c",
+            "secondary": "#ddb7ff",
+            "on-secondary-fixed": "#2c0051",
+            "text-primary": "#E2E8F0",
+            "secondary-container": "#6f00be",
+            "surface-variant": "#323440",
+            "high": "#FFA000",
+            "on-tertiary-container": "#ffe8ee",
+            "surface-container-high": "#272935",
+            "medium": "#00D1FF",
+            "on-secondary-container": "#d6a9ff",
+            "surface-container-lowest": "#0c0e18",
+            "surface-container": "#1d1f2b",
+            "on-secondary": "#490080",
+            "on-background": "#e1e1f2",
+            "on-primary-container": "#f1ebff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "component-gap": "16px",
+            "layout-gutter": "20px",
+            "layout-margin": "28px",
+            "stack-sm": "4px",
+            "element-gap-sm": "8px",
+            "element-gap-md": "12px"
+          },
+          "fontFamily": {
+            "label-caps": ["Inter"],
+            "body-base": ["Inter"],
+            "body-lg": ["Inter"],
+            "headline-lg": ["Inter"],
+            "headline-md": ["Inter"],
+            "tiny-heavy": ["Inter"],
+            "headline-sm": ["Inter"],
+            "meta-bold": ["Inter"]
+          },
+          "fontSize": {
+            "label-caps": ["12px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "700"}],
+            "body-base": ["13px", {"lineHeight": "1.45", "fontWeight": "400"}],
+            "body-lg": ["14px", {"lineHeight": "1.6", "fontWeight": "600"}],
+            "headline-lg": ["28px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "800"}],
+            "headline-md": ["20px", {"lineHeight": "1.3", "fontWeight": "800"}],
+            "tiny-heavy": ["10px", {"lineHeight": "1.2", "letterSpacing": "0.05em", "fontWeight": "800"}],
+            "headline-sm": ["18px", {"lineHeight": "1.4", "fontWeight": "700"}],
+            "meta-bold": ["11px", {"lineHeight": "1.2", "letterSpacing": "0.03em", "fontWeight": "700"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #0d0f1a;
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+    }
+
+    .glass-panel {
+      background: rgba(28, 32, 53, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(42, 47, 74, 0.5);
+    }
+
+    .leaflet-container {
+      background: #0d0f1a !important;
+    }
+
+    .shimmer-bg {
+      background: linear-gradient(90deg, transparent, rgba(108,71,255,0.1), transparent);
+      background-size: 200% 100%;
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+
+    .pulse-glow {
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 8px rgba(108,71,255,0.2); }
+      50% { box-shadow: 0 0 24px rgba(108,71,255,0.5); }
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2A2F4A; border-radius: 2px; }
+    ::-webkit-scrollbar-thumb:hover { background: #6c47ff; }
+
+    .glow-text-urgent { text-shadow: 0 0 10px rgba(255, 46, 77, 0.5); }
+    .glow-text-high { text-shadow: 0 0 10px rgba(255, 160, 0, 0.5); }
+    .glow-text-primary { text-shadow: 0 0 10px rgba(108, 71, 255, 0.5); }
+  </style>
+</head>
+<body class="text-on-surface">
+<!-- TopAppBar predicted from JSON -->
+<header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md border-b border-border shadow-[0_0_24px_rgba(108,71,255,0.15)] h-16 px-layout-margin flex justify-between items-center">
+<div class="flex items-center gap-element-gap-md">
+<div class="font-headline-md text-headline-md font-black tracking-tighter text-primary-container drop-shadow-[0_0_8px_rgba(108,71,255,0.5)]">
+        Community Hero
+      </div>
+<div class="hidden md:flex gap-element-gap-md ml-8">
+<nav class="flex gap-6">
+<a class="font-label-caps text-label-caps text-primary font-bold border-b-2 border-primary cursor-pointer active:scale-95 transition-colors duration-200" href="#">Live Feed</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 cursor-pointer active:scale-95" href="#">Analytics</a>
+<a class="font-label-caps text-label-caps text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 cursor-pointer active:scale-95" href="#">Hotspots</a>
+</nav>
+</div>
+</div>
+<div class="flex items-center gap-element-gap-md">
+<div class="flex items-center bg-surface-container-low px-3 py-1.5 rounded-lg border border-border">
+<span class="material-symbols-outlined text-primary-fixed-dim text-sm mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-base font-body-base text-on-surface placeholder:text-text-muted w-48" placeholder="Global Search..." type="text"/>
+</div>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-text-muted hover:text-primary cursor-pointer transition-colors">notifications</span>
+<span class="material-symbols-outlined text-text-muted hover:text-primary cursor-pointer transition-colors">settings</span>
+<div class="w-8 h-8 rounded-full border-2 border-primary-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A futuristic professional portrait of a tech administrator wearing minimalist gear, illuminated by soft blue and purple lighting to match a command center aesthetic. High resolution, shallow depth of field, professional studio setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMHA9JdBHf4h-fj6NhouKfZIympOzXfIRbP0lff_z1cNLtYBrkx-fUlk91ll8bgElk6e9yjWl_n4J-2rjZ-yR13S033O4wClvclaF6DGm9DEqVcsORpP6dwakbvhN2uFkrRUStLjsGxeL_BQhPeCzga5VK_rcH6Su7tcWwLr7iaGYnJsnAbGeDA_BBccjntlBW6rXM_-dssodJxjEQCY6o3tWgub1D0DwcX1FW_a2dvRnrnxdexenliLrcXLpVRGxVHEc6egjuuqs"/>
+</div>
+</div>
+</div>
+</header>
+<!-- SideNavBar predicted from JSON -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface-container dark:bg-surface-container border-r border-border flex flex-col p-element-gap-md space-y-stack-sm z-40">
+<div class="px-4 py-6">
+<div class="text-primary font-headline-sm text-headline-sm font-bold">Command Center</div>
+<div class="text-text-muted font-label-caps text-label-caps opacity-70">Vigilance Active</div>
+</div>
+<nav class="flex-1 space-y-2">
+<div class="flex items-center gap-3 px-4 py-3 text-primary-fixed bg-primary-container/20 border-r-2 border-primary-container font-label-caps text-label-caps cursor-pointer hover:bg-surface-container-highest transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined">sensors</span>
+<span>Live Feed</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-text-muted font-label-caps text-label-caps hover:text-on-surface cursor-pointer hover:bg-surface-container-highest transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined">monitoring</span>
+<span>Analytics</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-text-muted font-label-caps text-label-caps hover:text-on-surface cursor-pointer hover:bg-surface-container-highest transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined">map</span>
+<span>Hotspots</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-text-muted font-label-caps text-label-caps hover:text-on-surface cursor-pointer hover:bg-surface-container-highest transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined">groups</span>
+<span>Response Teams</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-text-muted font-label-caps text-label-caps hover:text-on-surface cursor-pointer hover:bg-surface-container-highest transition-all duration-200 ease-in-out">
+<span class="material-symbols-outlined">history</span>
+<span>Archive</span>
+</div>
+</nav>
+<div class="p-4 space-y-4">
+<button class="w-full bg-primary-container text-on-primary-container font-meta-bold text-meta-bold py-3 rounded-lg tracking-widest hover:brightness-110 active:scale-95 transition-all shimmer-bg">
+        AI ANALYSIS
+      </button>
+<div class="space-y-2 pt-4 border-t border-border/50">
+<div class="flex items-center gap-3 text-text-muted hover:text-on-surface cursor-pointer font-meta-bold text-meta-bold">
+<span class="material-symbols-outlined text-sm">help_outline</span>
+<span>Help</span>
+</div>
+<div class="flex items-center gap-3 text-text-muted hover:text-on-surface cursor-pointer font-meta-bold text-meta-bold">
+<span class="material-symbols-outlined text-sm">emergency_home</span>
+<span>Status</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Layout -->
+<main class="ml-64 mt-16 flex h-[calc(100vh-64px)]">
+<!-- Left Column: Map + Stats Bar -->
+<div class="flex-1 flex flex-col relative">
+<!-- Stats Bar: Cyber-Guardian Styling -->
+<div class="h-24 bg-surface-container-low border-b border-border grid grid-cols-4 gap-6 px-layout-margin items-center">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-primary-container/10 border border-primary-container/30 flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined">data_exploration</span>
+</div>
+<div>
+<div class="text-headline-sm font-headline-sm glow-text-primary" id="stat-total">142</div>
+<div class="text-meta-bold font-meta-bold text-text-muted uppercase">Total Issues</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-urgent/10 border border-urgent/30 flex items-center justify-center text-urgent">
+<span class="material-symbols-outlined">emergency</span>
+</div>
+<div>
+<div class="text-headline-sm font-headline-sm text-urgent glow-text-urgent" id="stat-urgent">08</div>
+<div class="text-meta-bold font-meta-bold text-text-muted uppercase">Urgent Alerts</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-high/10 border border-high/30 flex items-center justify-center text-high">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<div>
+<div class="text-headline-sm font-headline-sm text-high glow-text-high" id="stat-high">24</div>
+<div class="text-meta-bold font-meta-bold text-text-muted uppercase">High Priority</div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-lg bg-low/10 border border-low/30 flex items-center justify-center text-low">
+<span class="material-symbols-outlined">verified</span>
+</div>
+<div>
+<div class="text-headline-sm font-headline-sm text-low" id="stat-resolved">94%</div>
+<div class="text-meta-bold font-meta-bold text-text-muted uppercase">Resolved 24h</div>
+</div>
+</div>
+</div>
+<!-- Map Area -->
+<div class="flex-1 relative">
+<div class="w-full h-full" id="map"></div>
+<!-- Map Controls Floating -->
+<div class="absolute top-6 left-6 z-[1000] flex flex-col gap-2">
+<button class="bg-primary-container text-white px-6 py-3 rounded-xl font-body-lg text-body-lg flex items-center gap-2 shadow-2xl hover:scale-105 active:scale-95 transition-all pulse-glow" id="deploy-report-btn">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add_circle</span>
+            DEPLOY REPORT
+          </button>
+</div>
+<!-- Legend Overlay -->
+<div class="absolute bottom-6 left-6 z-[1000] glass-panel p-4 rounded-xl border border-border">
+<div class="text-tiny-heavy font-tiny-heavy text-text-muted uppercase mb-3">Live Risk Legend</div>
+<div class="space-y-2">
+<div class="flex items-center gap-3 text-body-base font-body-base">
+<span class="w-3 h-3 rounded-full bg-urgent shadow-[0_0_8px_#FF2E4D]"></span>
+<span>Urgent Intervention</span>
+</div>
+<div class="flex items-center gap-3 text-body-base font-body-base">
+<span class="w-3 h-3 rounded-full bg-high shadow-[0_0_8px_#FFA000]"></span>
+<span>High Severity</span>
+</div>
+<div class="flex items-center gap-3 text-body-base font-body-base">
+<span class="w-3 h-3 rounded-full bg-medium shadow-[0_0_8px_#00D1FF]"></span>
+<span>Standard Operations</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Sidebar: Live Feed -->
+<aside class="w-[400px] bg-surface-container-high border-l border-border flex flex-col">
+<div class="p-6 border-b border-border flex justify-between items-center">
+<div>
+<h2 class="text-headline-sm font-headline-sm">Live Feed</h2>
+<p class="text-meta-bold font-meta-bold text-text-muted">Real-time civic signal analysis</p>
+</div>
+<div class="bg-primary-container/20 text-primary-container px-2 py-1 rounded text-tiny-heavy font-tiny-heavy">12 NEW</div>
+</div>
+<div class="flex-1 overflow-y-auto p-4 space-y-4" id="live-feed-container">
+<!-- Urgent Card -->
+<div class="glass-panel p-4 rounded-xl border-l-4 border-l-urgent relative overflow-hidden group hover:bg-surface-container-highest transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-urgent/20 text-urgent text-tiny-heavy px-2 py-0.5 rounded uppercase tracking-wider">Urgent</span>
+<span class="text-meta-bold text-text-muted">2m ago</span>
+</div>
+<h3 class="text-body-lg font-body-lg mb-1">Severe Water Main Burst</h3>
+<p class="text-body-base text-text-muted line-clamp-2">Sector 14 Bypass road. Significant flooding observed. Risk of road subsidence detected by vision model.</p>
+<div class="mt-4 p-2 bg-surface-container-lowest/50 rounded-lg border border-border/50">
+<div class="flex items-center gap-2 text-primary-fixed font-meta-bold text-meta-bold mb-1">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+              AI REASONING
+            </div>
+<p class="text-[11px] leading-relaxed text-text-muted italic">"Satellite imagery confirms 40% increase in surface water volume. Prioritizing for structural engineering dispatch."</p>
+</div>
+<div class="absolute inset-0 bg-gradient-to-r from-urgent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+</div>
+<!-- High Card -->
+<div class="glass-panel p-4 rounded-xl border-l-4 border-l-high relative overflow-hidden group hover:bg-surface-container-highest transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-high/20 text-high text-tiny-heavy px-2 py-0.5 rounded uppercase tracking-wider">High</span>
+<span class="text-meta-bold text-text-muted">14m ago</span>
+</div>
+<h3 class="text-body-lg font-body-lg mb-1">Streetlight Outage Grid</h3>
+<p class="text-body-base text-text-muted line-clamp-2">Park Avenue intersection. 12 units offline. Area classified as high pedestrian traffic.</p>
+<div class="mt-4 p-2 bg-surface-container-lowest/50 rounded-lg border border-border/50">
+<div class="flex items-center gap-2 text-primary-fixed font-meta-bold text-meta-bold mb-1">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+              AI REASONING
+            </div>
+<p class="text-[11px] leading-relaxed text-text-muted italic">"Correlation with past local security incidents suggests immediate repair to maintain public safety scores."</p>
+</div>
+</div>
+<!-- Medium Card -->
+<div class="glass-panel p-4 rounded-xl border-l-4 border-l-medium relative overflow-hidden group hover:bg-surface-container-highest transition-colors cursor-pointer">
+<div class="flex justify-between items-start mb-2">
+<span class="bg-medium/20 text-medium text-tiny-heavy px-2 py-0.5 rounded uppercase tracking-wider">Medium</span>
+<span class="text-meta-bold text-text-muted">45m ago</span>
+</div>
+<h3 class="text-body-lg font-body-lg mb-1">Waste Accumulation</h3>
+<p class="text-body-base text-text-muted line-clamp-2">Block C Market Square. Missed pickup confirmed via citizen report photo.</p>
+<div class="mt-4 p-2 bg-surface-container-lowest/50 rounded-lg border border-border/50">
+<div class="flex items-center gap-2 text-primary-fixed font-meta-bold text-meta-bold mb-1">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+              AI REASONING
+            </div>
+<p class="text-[11px] leading-relaxed text-text-muted italic">"Volume estimate: 2.5 cubic meters. Logistical routing optimization suggests pickup within 4 hours."</p>
+</div>
+</div>
+</div>
+</aside>
+</main>
+<!-- Report Modal -->
+<div class="fixed inset-0 z-[2000] hidden flex items-center justify-center p-6" id="report-modal">
+<div class="absolute inset-0 bg-background/80 backdrop-blur-md" onclick="toggleModal()"></div>
+<div class="glass-panel w-full max-w-2xl rounded-2xl relative shadow-[0_32px_64px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[921px]">
+<!-- Modal Header -->
+<div class="p-6 border-b border-border flex justify-between items-center bg-surface-container-low">
+<div>
+<h2 class="text-headline-md font-headline-md">Deploy Citizen Report</h2>
+<p class="text-body-base text-text-muted">AI-augmented civic data capture</p>
+</div>
+<button class="text-text-muted hover:text-white transition-colors" onclick="toggleModal()">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-8 space-y-8">
+<!-- Upload Section -->
+<div class="space-y-4">
+<label class="text-label-caps font-label-caps text-text-muted uppercase tracking-widest">Visual Evidence</label>
+<div class="border-2 border-dashed border-border rounded-xl p-12 text-center hover:border-primary-container transition-colors cursor-pointer group bg-surface-container-lowest/30">
+<span class="material-symbols-outlined text-4xl text-text-muted group-hover:text-primary-container mb-4 block">cloud_upload</span>
+<p class="text-body-lg font-body-lg">Drag and drop or click to upload</p>
+<p class="text-meta-bold text-text-muted mt-1">High-resolution imagery preferred for vision analysis</p>
+</div>
+</div>
+<!-- Description & Voice -->
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<label class="text-label-caps font-label-caps text-text-muted uppercase tracking-widest">Detail Log</label>
+<div class="flex items-center gap-2 text-low font-meta-bold text-meta-bold opacity-0 transition-opacity" id="voice-status">
+<span class="w-2 h-2 rounded-full bg-low pulse-glow"></span>
+              LISTENING...
+            </div>
+</div>
+<div class="relative">
+<textarea class="w-full bg-surface-container-high border-border rounded-xl p-4 text-body-base focus:ring-2 focus:ring-primary-container focus:border-transparent min-h-[120px] pr-12" placeholder="Describe the incident in detail..."></textarea>
+<button class="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-surface-container-lowest border border-border flex items-center justify-center text-primary-container hover:bg-primary-container hover:text-white transition-all shadow-lg" id="voice-btn">
+<span class="material-symbols-outlined">mic</span>
+</button>
+</div>
+</div>
+<!-- AI Preview Section -->
+<div class="space-y-4">
+<label class="text-label-caps font-label-caps text-text-muted uppercase tracking-widest">Claude-Powered Analysis Preview</label>
+<div class="bg-primary-container/5 rounded-xl border border-primary-container/20 p-6 relative overflow-hidden">
+<div class="flex gap-4 items-start relative z-10">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-white flex-shrink-0">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+<div class="space-y-3 w-full">
+<div class="h-2 w-1/3 bg-primary-container/20 rounded shimmer-bg"></div>
+<div class="h-2 w-full bg-primary-container/10 rounded shimmer-bg"></div>
+<div class="h-2 w-2/3 bg-primary-container/10 rounded shimmer-bg"></div>
+</div>
+</div>
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl">psychology</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Modal Footer -->
+<div class="p-6 border-t border-border bg-surface-container-low flex gap-4 justify-end">
+<button class="px-6 py-2.5 rounded-lg font-body-lg text-body-lg border border-border text-text-muted hover:bg-surface-container-high transition-all" onclick="toggleModal()">Cancel</button>
+<button class="px-8 py-2.5 rounded-lg font-body-lg text-body-lg bg-primary-container text-on-primary-container font-bold shadow-xl hover:brightness-110 active:scale-95 transition-all">TRANSMIT REPORT</button>
+</div>
+</div>
+</div>
+<script>
+    // Leaflet Map Initialization
+    let map;
+    function initMap() {
+      const gzbCenter = [28.6692, 77.0669];
+      map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+      }).setView(gzbCenter, 13);
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19
+      }).addTo(map);
+
+      // Add sample neon markers
+      const samplePoints = [
+        { loc: [28.67, 77.07], type: 'urgent', label: 'Water Burst' },
+        { loc: [28.68, 77.08], type: 'high', label: 'Grid Failure' },
+        { loc: [28.65, 77.05], type: 'medium', label: 'Waste Accumulation' }
+      ];
+
+      const colors = { urgent: '#FF2E4D', high: '#FFA000', medium: '#00D1FF' };
+
+      samplePoints.forEach(p => {
+        L.circleMarker(p.loc, {
+          radius: 12,
+          fillColor: colors[p.type],
+          color: '#ffffff',
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 0.8
+        }).addTo(map).bindPopup(`<strong class="text-[#0d0f1a]">${p.label}</strong>`);
+      });
+    }
+
+    // Modal Interactions
+    function toggleModal() {
+      const modal = document.getElementById('report-modal');
+      modal.classList.toggle('hidden');
+    }
+
+    document.getElementById('deploy-report-btn').addEventListener('click', toggleModal);
+
+    // Voice Interaction Simulation
+    const voiceBtn = document.getElementById('voice-btn');
+    const voiceStatus = document.getElementById('voice-status');
+    let isRecording = false;
+
+    voiceBtn.addEventListener('click', () => {
+      isRecording = !isRecording;
+      if (isRecording) {
+        voiceBtn.classList.add('bg-urgent', 'text-white', 'animate-pulse');
+        voiceStatus.classList.replace('opacity-0', 'opacity-100');
+      } else {
+        voiceBtn.classList.remove('bg-urgent', 'text-white', 'animate-pulse');
+        voiceStatus.classList.replace('opacity-100', 'opacity-0');
+      }
+    });
+
+    // Window Load
+    window.onload = initMap;
+  </script>
+<!-- Footer predicted from JSON -->
+<footer class="fixed bottom-0 w-full py-4 bg-surface-container-lowest border-t border-border/50 flex flex-row justify-between items-center px-layout-margin z-50">
+<div class="text-text-muted font-meta-bold text-meta-bold">
+      © 2024 Community Hero Ops Hub • System v4.0.2
+    </div>
+<div class="flex gap-6">
+<a class="text-text-muted font-meta-bold text-meta-bold hover:text-on-surface transition-opacity" href="#">Protocol</a>
+<a class="text-text-muted font-meta-bold text-meta-bold hover:text-on-surface transition-opacity" href="#">Privacy</a>
+<a class="text-text-muted font-meta-bold text-meta-bold hover:text-on-surface transition-opacity" href="#">Security</a>
+<a class="text-text-muted font-meta-bold text-meta-bold hover:text-on-surface transition-opacity" href="#">Contact</a>
+</div>
+</footer>
+</body></html>
