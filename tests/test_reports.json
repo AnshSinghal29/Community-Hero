@@ -1,0 +1,56 @@
+[
+  {
+    "description": "Large pothole on Sector 7 main road near Metro station, approximately 15cm deep. Car-sized. High vehicle traffic area. Causing severe damage to vehicles.",
+    "latitude": 28.6692,
+    "longitude": 77.0669,
+    "address": "Near Sector 7 Metro Station, Ghaziabad",
+    "expected_category": "pothole",
+    "expected_priority": "urgent",
+    "notes": "Main road, rush hour traffic"
+  },
+  {
+    "description": "Pipeline burst causing water accumulation on the road. Sewage water visible. Strong smell. Blocking pedestrian pathway.",
+    "latitude": 28.6745,
+    "longitude": 77.0750,
+    "address": "Sector 9, near Shyam Nagar Road, Ghaziabad",
+    "expected_category": "water_leak",
+    "expected_priority": "high",
+    "notes": "Pipeline visible above ground level"
+  },
+  {
+    "description": "Streetlight pole damaged with exposed wiring. Electric shock risk. Three poles in a row non-functional since last week. Area pitch dark at night.",
+    "latitude": 28.6600,
+    "longitude": 77.0600,
+    "address": "Sector 11, Main Boulevard, Ghaziabad",
+    "expected_category": "streetlight",
+    "expected_priority": "urgent",
+    "notes": "Exposed electrical wiring is an immediate safety risk"
+  },
+  {
+    "description": "Garbage has accumulated for 5 days at this spot. Municipal trucks not collecting. Foul smell, breeding mosquitoes. Near residential colony.",
+    "latitude": 28.6520,
+    "longitude": 77.0580,
+    "address": "NH-119 Corridor, near Vasundhara crossing, Ghaziabad",
+    "expected_category": "waste_management",
+    "expected_priority": "high",
+    "notes": "Monsoon season makes this a health hazard"
+  },
+  {
+    "description": "Small pothole on the side road. Cosmetic damage only. No immediate safety concern. Road still passable without issues.",
+    "latitude": 28.6650,
+    "longitude": 77.0700,
+    "address": "Sector 10, Inner Lane 3, Ghaziabad",
+    "expected_category": "pothole",
+    "expected_priority": "low",
+    "notes": "Low-traffic area, not urgent"
+  },
+  {
+    "description": "Major water logging due to blocked drainage. Entire road flooded up to knee level. Emergency vehicles cannot pass. Monsoon rains making it worse.",
+    "latitude": 28.6710,
+    "longitude": 77.0630,
+    "address": "Sector 8, near RDC Crossing, Ghaziabad",
+    "expected_category": "water_leak",
+    "expected_priority": "urgent",
+    "notes": "Flood-level water logging, emergency situation"
+  }
+]
