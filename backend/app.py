@@ -230,9 +230,6 @@ def uploaded_file(filename):
     return send_from_directory(str(UPLOAD_FOLDER.resolve()), filename)
 
 
-if __name__ == "__main__":
-    port = int(os.getenv("FLASK_PORT", 5000))
-    debug = os.getenv("FLASK_DEBUG", "1") == "1"
-
-    logger.info(f"[SUCCESS] Starting Community Hero API on port {port} (FREE tier - SQLite + local storage)")
-    app.run(host="0.0.0.0", port=port, debug=debug)
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', os.environ.get('FLASK_PORT', 5000)))
+    app.run(host='0.0.0.0', port=port)
