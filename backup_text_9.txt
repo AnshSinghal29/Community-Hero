@@ -1,0 +1,375 @@
+Created At: 2026-06-27T07:30:17Z
+Completed At: 2026-06-27T07:30:17Z
+File Path: `file:///c:/Community%20Hero/Asset/FREE_SETUP_QUICK_START.md`
+Total Lines: 367
+Total Bytes: 10696
+Showing lines 1 to 367
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: # FREE API Alternatives - Quick Setup Guide
+2: 
+3: **Time to implement**: 2–3 hours  
+4: **Cost**: $0
+5: 
+6: ---
+7: 
+8: ## 🚀 30-Second Overview
+9: 
+10: | What | Was Using | Now Using | Cost |
+11: |------|-----------|-----------|------|
+12: | AI Analysis | Claude Opus 4.6 | Claude 3.5 Haiku | Free |
+13: | Maps | Google Maps API | OpenStreetMap + Leaflet | Free |
+14: | Database | Google Sheets | SQLite (local) | Free |
+15: | Storage | Google Drive | Local file system | Free |
+16: 
+17: ---
+18: 
+19: ## ⏱️ Quick Setup (3 Steps)
+20: 
+21: ### Step 1: Get Free Anthropic API Key (5 minutes)
+22: 
+23: 1. Go to: https://console.anthropic.com/
+24: 2. Sign up (no credit card needed)
+25: 3. Create API key → Copy it
+26: 4. Open `.env` file in your project:
+27: 
+28: ```
+29: ANTHROPIC_API_KEY=sk-ant-v0-YOUR-FREE-KEY-HERE
+30: ```
+31: 
+32: **That's it!** You get 100K tokens/month free (enough for ~50 reports/day)
+33: 
+34: ---
+35: 
+36: ### Step 2: Update in Antigravity IDE (1 hour)
+37: 
+38: **Open Antigravity IDE Manager View**
+39: 
+40: Create new agent:
+41: 
+42: ```
+43: Name: Cost-Optimization-Engineer
+44: Role: Replace paid APIs with free alternatives
+45: Skills: Database migration, API integration, optimization
+46: Primary task: Implement free tier changes
+47: ```
+48: 
+49: **Assign this task**:
+50: 
+51: ```
+52: TASK: Migrate Community Hero to Free APIs
+53: 
+54: 1. Backend Changes:
+55:    
+56:    a) Replace google_sheets.py with database.py:
+57:       - Use SQLite (built-in Python)
+58:       - Functions: save_to_db(), get_from_db(), get_stats()
+59:       - Table: issues with columns: id, timestamp, category, priority, severity_score, latitude, longitude, address, description, reasoning, recommended_action, image_url, confidence, status
+60:       
+61:    b) Update backend/app.py:
+62:       - Change imports from "gspread" to "database"
+63:       - All get_from_sheets() → get_from_db()
+64:       - All save_to_sheets() → save_to_db()
+65:       - Image uploads go to /uploads/ folder (local)
+66:       - Database initializes automatically
+67: 
+68:    c) Update backend/agent.py:
+69:       - Change model from "claude-opus-4-6" to "claude-3-5-haiku-20241022"
+70:       - Keep all vision capability
+71:       - Reduce max_tokens from 2000 to 1024 (Haiku is efficient)
+72:       - Keep extended thinking (if implemented)
+73: 
+74: 2. Frontend Changes:
+75:    
+76:    Replace dashboard.html:
+77:    - Use Leaflet (free map library from CDN)
+78:    - Use OpenStreetMap tiles (no API key needed)
+79:    - Keep all functionality: markers, colors, click-to-report, real-time updates
+80:    - No changes to the report form or stats panel
+81:    - Only the map part changes (Google Maps → Leaflet)
+82: 
+83: 3. Configuration:
+84:    
+85:    Update .env:
+86:    - Remove: GOOGLE_SHEETS_ID, GOOGLE_MAPS_API_KEY, service_account.json needs
+87:    - Keep: ANTHROPIC_API_KEY (free tier)
+88:    - Add: UPLOAD_FOLDER=./uploads
+89: 
+90: 4. Verification:
+91: 
+92:    Test locally:
+93:    - python backend/app.py (Flask starts)
+94:    - Create test issue with image
+95:    - Image saves to /uploads/
+96:    - Issue appears in SQLite (issues.db)
+97:    - Frontend loads with Leaflet map
+98:    - No API key errors in console
+99:    - /api/stats returns JSON from database
+100:    - All color-coded markers work
+101:    - Click issue → map centers
+102: 
+103: Return: Updated database.py, app.py, agent.py, dashboard.html, requirements.txt
+104: ```
+105: 
+106: ---
+107: 
+108: ### Step 3: Verify Everything Works (30 minutes)
+109: 
+110: Once agent finishes, test locally:
+111: 
+112: ```bash
+113: # Terminal 1: Backend
+114: cd community-hero/backend
+115: pip install -r requirements.txt
+116: python app.py
+117: # Should see: "Running on http://localhost:5000"
+118: 
+119: # Terminal 2: Frontend
+120: cd community-hero/frontend
+121: python -m http.server 8000
+122: # Open: http://localhost:8000/dashboard.html
+123: ```
+124: 
+125: **Test checklist**:
+126: - [ ] Map displays (should be green/brown OpenStreetMap, not Google)
+127: - [ ] Stats show 0 issues initially
+128: - [ ] Click map → form opens
+129: - [ ] Submit test image + description
+130: - [ ] Form says "Analyzing..."
+131: - [ ] Agent responds with category/priority
+132: - [ ] Issue appears on map
+133: - [ ] Check `/uploads/` folder → image file there
+134: - [ ] Check `issues.db` file exists
+135: 
+136: **Verify database**:
+137: ```bash
+138: # In project root
+139: sqlite3 issues.db "SELECT * FROM issues;"
+140: # Should show your test issue as a row
+141: ```
+142: 
+143: ---
+144: 
+145: ## 📋 What Changed (High-Level)
+146: 
+147: ### Before (Paid APIs)
+148: ```python
+149: # backend/google_sheets.py
+150: import gspread
+151: sheet = client.open('Community Hero').worksheet('Reports')
+152: sheet.append_row([...])  # $$$
+153: 
+154: # frontend/dashboard.html
+155: <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY"></script>
+156: ```
+157: 
+158: ### After (Free APIs)
+159: ```python
+160: # backend/database.py
+161: import sqlite3
+162: conn = sqlite3.connect('issues.db')
+163: cursor.execute('INSERT INTO issues VALUES (...)')  # FREE
+164: 
+165: # frontend/dashboard.html
+166: <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+167: <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+168: ```
+169: 
+170: **Same functionality, zero cost.**
+171: 
+172: ---
+173: 
+174: ## 🎯 Files You Need to Know
+175: 
+176: **Files that change**:
+177: ```
+178: community-hero/
+179: ├── backend/
+180: │   ├── app.py ← UPDATED (use database.py instead of google_sheets.py)
+181: │   ├── agent.py ← UPDATED (use Haiku instead of Opus)
+182: │   ├── database.py ← NEW FILE (replaces google_sheets.py)
+183: │   ├── google_sheets.py ← DELETE (not needed)
+184: │   └── requirements.txt ← UPDATED (remove gspread)
+185: ├── frontend/
+186: │   └── dashboard.html ← UPDATED (use Leaflet instead of Google Maps)
+187: └── .env ← UPDATED (only ANTHROPIC_API_KEY needed)
+188: ```
+189: 
+190: **Files that stay the same**:
+191: ```
+192: ├── CONTEXT.md
+193: ├── README.md
+194: ├── uploads/ ← NEW (auto-created)
+195: └── issues.db ← NEW (auto-created)
+196: ```
+197: 
+198: ---
+199: 
+200: ## 💰 Cost Breakdown
+201: 
+202: **Before**:
+203: - Anthropic: $15/1M tokens (~$5–10/month for this project)
+204: - Google Maps: $7 per 1000 requests (~$10–20/month)
+205: - Google Sheets/Drive: Free tier, but complex setup
+206: - **Total**: ~$20–30/month + setup hassle
+207: 
+208: **After**:
+209: - Anthropic: Free 100K tokens/month
+210: - Maps: Free (OpenStreetMap)
+211: - Database: Free (SQLite)
+212: - Storage: Free (local)
+213: - **Total**: $0/month + zero setup hassle ✅
+214: 
+215: ---
+216: 
+217: ## 🔧 Common Questions
+218: 
+219: **Q: Will the free Haiku tier be fast enough?**  
+220: A: Yes! Haiku is designed for fast categorization tasks. Opus is overkill for this project. Haiku is actually faster (1–2 sec vs 2–3 sec).
+221: 
+222: **Q: What if I run out of free tokens?**  
+223: A: 100K tokens = ~50 issues/day. If you submit 50+ issues in one day during hackathon, you hit the limit. Solution: Get a paid API key later (takes 2 minutes to switch).
+224: 
+225: **Q: Is SQLite safe for production?**  
+226: A: For a hackathon MVP? Yes. For actual production? Use PostgreSQL. But for now, perfect.
+227: 
+228: **Q: Can I migrate to Google Sheets later?**  
+229: A: Yes. Just export SQLite to CSV, upload to Google Sheets manually. Takes 5 minutes.
+230: 
+231: **Q: Will judges see the database?**  
+232: A: Yes! When you submit, include:
+233:    - `issues.db` (SQLite database file)
+234:    - `/uploads/` folder (all test images)
+235:    - Judges can open both and verify data integrity
+236: 
+237: ---
+238: 
+239: ## 🚀 The Antigravity Prompt (Copy-Paste Ready)
+240: 
+241: Use this exact prompt in your Antigravity IDE Manager View:
+242: 
+243: ```
+244: I want to convert Community Hero to use free APIs. Here's what to do:
+245: 
+246: 1. Create backend/database.py:
+247:    - SQLite integration with these functions:
+248:      - init_db() → creates issues table
+249:      - save_to_db(analysis, image_path, timestamp) → saves to SQLite, returns report_id
+250:      - get_from_db(category=None, priority=None, limit=100) → fetches from SQLite
+251:      - get_recent_reports(lat, lng, days=7, radius=50) → for duplicate detection
+252:      - get_stats() → returns {total, urgent, high, resolved}
+253:    
+254:    Table schema:
+255:    - id (TEXT PRIMARY KEY)
+256:    - timestamp (TEXT)
+257:    - category (TEXT)
+258:    - priority (TEXT)
+259:    - severity_score (INTEGER)
+260:    - latitude (REAL)
+261:    - longitude (REAL)
+262:    - address (TEXT)
+263:    - description (TEXT)
+264:    - reasoning (TEXT)
+265:    - recommended_action (TEXT)
+266:    - image_url (TEXT - local path)
+267:    - confidence (REAL)
+268:    - status (TEXT)
+269: 
+270: 2. Update backend/app.py:
+271:    - Replace "import gspread" with "from database import *"
+272:    - All endpoints now use database functions
+273:    - Images save to /uploads/ folder locally
+274:    - No more Google Sheets API calls
+275:    - Keep all error handling
+276: 
+277: 3. Update backend/agent.py:
+278:    - Change model to "claude-3-5-haiku-20241022"
+279:    - Keep vision capability
+280:    - Reduce max_tokens to 1024
+281:    - Keep extended thinking if present
+282: 
+283: 4. Create frontend/dashboard.html:
+284:    - Use Leaflet library (free, from CDN)
+285:    - Use OpenStreetMap tiles (free, no API key)
+286:    - Keep all functionality exactly the same:
+287:      - Stats panel (total, urgent, high, resolved %)
+288:      - Issues list with color-coded cards
+289:      - Map with colored markers
+290:      - Click map to report
+291:      - Form submission
+292:      - Real-time updates
+293:    - Only difference: Google Maps → Leaflet maps
+294: 
+295: 5. Update requirements.txt:
+296:    - Remove: gspread, google-auth-oauthlib, google-auth-httplib2
+297:    - Keep: flask, flask-cors, anthropic, python-dotenv
+298:    - SQLite is built-in (no install needed)
+299: 
+300: 6. Create .env with only:
+301:    ANTHROPIC_API_KEY=sk-ant-v0-...
+302: 
+303: Test locally:
+304: - python app.py
+305: - Open dashboard.html
+306: - Submit test image
+307: - Verify in /uploads/ and issues.db
+308: 
+309: Return: All updated files with no Google API dependencies
+310: ```
+311: 
+312: ---
+313: 
+314: ## ✅ After Implementation Checklist
+315: 
+316: - [ ] ANTHROPIC_API_KEY is free tier key (sk-ant-v0-...)
+317: - [ ] `database.py` created with SQLite functions
+318: - [ ] `app.py` updated to use database.py
+319: - [ ] `agent.py` using claude-3-5-haiku-20241022
+320: - [ ] `dashboard.html` using Leaflet (no Google Maps)
+321: - [ ] `.env` only has ANTHROPIC_API_KEY
+322: - [ ] `/uploads/` folder created (auto on first run)
+323: - [ ] `issues.db` file created (auto on first run)
+324: - [ ] `google_sheets.py` deleted
+325: - [ ] No Google Cloud credentials needed
+326: - [ ] No service_account.json file needed
+327: - [ ] Test image uploads work
+328: - [ ] SQLite stores data correctly
+329: - [ ] Map displays with Leaflet
+330: - [ ] All stats show correct counts
+331: - [ ] No API key errors in console
+332: 
+333: ---
+334: 
+335: ## 🎉 You're Done!
+336: 
+337: You now have a **fully functional, zero-cost Community Hero** that:
+338: - ✅ Uses free Claude API (100K tokens/month)
+339: - ✅ Uses free OpenStreetMap (unlimited)
+340: - ✅ Uses free SQLite (unlimited)
+341: - ✅ Uses local storage (unlimited)
+342: - ✅ Works offline (no internet for DB)
+343: - ✅ Runs on your machine (full control)
+344: - ✅ Impressive for judges (shows smart optimization)
+345: 
+346: **Cost: $0/month**  
+347: **Time to implement: 2–3 hours in Antigravity**  
+348: **Ready to submit: YES ✅**
+349: 
+350: ---
+351: 
+352: ## 🚀 Next Steps
+353: 
+354: 1. **Read**: FREE_API_ALTERNATIVES.md (full technical details)
+355: 2. **Copy-paste**: The Antigravity prompt above
+356: 3. **Monitor**: Agent builds in Manager View
+357: 4. **Test**: Verify everything works locally
+358: 5. **Commit**: Push to GitHub
+359: 6. **Submit**: You're winning with zero API costs
+360: 
+361: **Good luck! 🏛️**
+362: 
+363: ---
+364: 
+365: **Last Updated**: June 25, 2026  
+366: **Status**: Ready to implement (copy-paste prompt into Antigravity)
+367: 
+The above content shows the entire, complete file contents of the requested file.

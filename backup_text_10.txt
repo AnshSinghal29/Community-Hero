@@ -1,0 +1,268 @@
+Created At: 2026-06-27T07:34:18Z
+Completed At: 2026-06-27T07:34:21Z
+The following changes were made by the multi_replace_file_content tool to: c:\Community Hero\frontend\dashboard.html. If relevant, proactively run terminal commands to execute this code for the USER. Don't ask for permission.
+[diff_block_start]
+@@ -8,6 +8,9 @@
+   <link rel="preconnect" href="https://fonts.googleapis.com" />
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
++  <!-- Leaflet (FREE map library, replaces Google Maps) -->
++  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
++  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+ 
+   <!-- ════════════════════════════════════════════════════
+        STYLES
+@@ -967,11 +967,10 @@
+   <!-- ════ GOOGLE MAPS ════ -->
+   <script>
+     // ─────────────────────────────────────────────────────────────
+-    // CONFIG — Update these before running
++    // CONFIG — Only BACKEND_URL needed (no API keys!)
+     // ─────────────────────────────────────────────────────────────
+     const BACKEND_URL = 'http://localhost:5000';
+-    const GHAZIABAD_CENTER = { lat: 28.6692, lng: 77.0669 };
+-    const MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'; // ← Replace this
++    const GHAZIABAD_CENTER = [28.6692, 77.0669]; // [lat, lng] for Leaflet
+ 
+     // ─────────────────────────────────────────────────────────────
+     // STATE
+@@ -995,32 +995,22 @@
+     };
+ 
+     // ─────────────────────────────────────────────────────────────
+-    // MAP INIT (called by Google Maps callback)
++    // MAP INIT — Leaflet + OpenStreetMap (FREE, no API key)
+     // ─────────────────────────────────────────────────────────────
+     function initMap() {
+-      map = new google.maps.Map(document.getElementById('map'), {
+-        center: GHAZIABAD_CENTER,
+-        zoom: 13,
+-        mapTypeControl: false,
+-        fullscreenControl: true,
+-        streetViewControl: false,
+-        styles: [
+-          { elementType: 'geometry', stylers: [{ color: '#0d0f1a' }] },
+-          { elementType: 'labels.text.fill', stylers: [{ color: '#8892a4' }] },
+-          { elementType: 'labels.text.stroke', stylers: [{ color: '#0d0f1a' }] },
+-          { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#1c2035' }] },
+-          { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#2a2f4a' }] },
+-          { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0a0c15' }] },
+-          { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+-          { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+-          { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#2a2f4a' }] }
+-        ]
+-      });
++      map = L.map('map', { zoomControl: true }).setView(GHAZIABAD_CENTER, 13);
++
++      // Dark tile layer (CartoDB Dark Matter — free, no API key)
++      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
++        attribution: '\u00a9 <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors \u00a9 <a href="https://carto.com/">CARTO</a>',
++        subdomains: 'abcd',
++        maxZoom: 19
++      }).addTo(map);
+ 
+       // Click on map → pre-fill coords + open modal
+-      map.addListener('click', (e) => {
+-        document.getElementById('latitude').value = e.latLng.lat().toFixed(6);
+-        document.getElementById('longitude').value = e.latLng.lng().toFixed(6);
++      map.on('click', (e) => {
++        document.getElementById('latitude').value  = e.latlng.lat.toFixed(6);
++        document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+         openModal();
+       });
+ 
+@@ -1170,10 +1170,9 @@
+           card.classList.add('active');
+           selectedCard = card;
+ 
+-          // Pan map
++          // Pan map (Leaflet)
+           if (map && issue.latitude && issue.longitude) {
+-            map.panTo({ lat: parseFloat(issue.latitude), lng: parseFloat(issue.longitude) });
+-            map.setZoom(16);
++            map.setView([parseFloat(issue.latitude), parseFloat(issue.longitude)], 16);
+           }
+         });
+ 
+@@ -1182,10 +1182,10 @@
+     }
+ 
+     // ─────────────────────────────────────────────────────────────
+-    // RENDER MAP MARKERS
++    // RENDER MAP MARKERS (Leaflet circleMarkers)
+     // ─────────────────────────────────────────────────────────────
+     function renderMarkers(list) {
+-      markers.forEach(m => m.setMap(null));
++      markers.forEach(m => map.removeLayer(m));
+       markers = [];
+ 
+       list.forEach(issue => {
+@@ -1192,34 +1192,29 @@
+         const lng = parseFloat(issue.longitude);
+         if (!lat || !lng) return;
+ 
+-        const marker = new google.maps.Marker({
+-          position: { lat, lng },
+-          map,
+-          title: `${issue.category} — ${issue.priority}`,
+-          icon: {
+-            path: google.maps.SymbolPath.CIRCLE,
+-            scale: 11,
+-            fillColor: PRIORITY_COLORS[issue.priority] || '#888',
+-            fillOpacity: 0.85,
+-            strokeColor: '#ffffff',
+-            strokeWeight: 2
+-          }
+-        });
+-
+-        const infoWin = new google.maps.InfoWindow({
+-          content: `
+-            <div style="font-family:Inter,sans-serif;padding:4px 0;color:#000;min-width:180px">
+-              <strong>${CATEGORY_EMOJI[issue.category] || '🔧'} ${(issue.category||'').replace(/_/g,' ')}</strong>
+-              <div style="margin-top:4px;font-size:12px;color:#555">${issue.address || 'No address'}</div>
+-              <div style="margin-top:6px">
+-                <span style="background:${PRIORITY_COLORS[issue.priority]};color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;text-transform:uppercase">${issue.priority}</span>
+-              </div>
+-              ${issue.reasoning ? `<div style="margin-top:8px;font-size:11px;color:#777;line-height:1.4">${issue.reasoning.slice(0,120)}...</div>` : ''}
+-            </div>
+-          `
+-        });
+-
+-        marker.addListener('click', () => infoWin.open(map, marker));
++        const color = PRIORITY_COLORS[issue.priority] || '#888';
++        const emoji = CATEGORY_EMOJI[issue.category] || '🔧';
++        const catLabel = (issue.category || 'other').replace(/_/g, ' ');
++
++        const marker = L.circleMarker([lat, lng], {
++          radius: 11,
++          fillColor: color,
++          color: '#ffffff',
++          weight: 2,
++          opacity: 0.9,
++          fillOpacity: 0.85
++        }).bindPopup(`
++          <div style="font-family:Inter,sans-serif;padding:4px 0;min-width:180px">
++            <strong>${emoji} ${catLabel}</strong>
++            <div style="margin-top:4px;font-size:12px;color:#555">${issue.address || 'No address'}</div>
++            <div style="margin-top:6px">
++              <span style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;text-transform:uppercase">${issue.priority}</span>
++            </div>
++            ${issue.reasoning ? `<div style="margin-top:8px;font-size:11px;color:#777;line-height:1.4">${issue.reasoning.slice(0,120)}...</div>` : ''}
++          </div>
++        `);
++
++        marker.addTo(map);
+         markers.push(marker);
+       });
+     }
+@@ -1226,53 +1226,46 @@
+     // ─────────────────────────────────────────────────────────────
+-    // RENDER PREDICTIONS (dashed yellow circles)
++    // RENDER PREDICTIONS (Leaflet circles — dashed yellow)
+     // ─────────────────────────────────────────────────────────────
+     function renderPredictions(predictions) {
+-      predictionOverlays.forEach(o => o.setMap(null));
++      predictionOverlays.forEach(o => map.removeLayer(o));
+       predictionOverlays = [];
+ 
+       predictions.forEach(p => {
+-        const circle = new google.maps.Circle({
+-          map,
+-          center: { lat: parseFloat(p.latitude), lng: parseFloat(p.longitude) },
++        const lat = parseFloat(p.latitude);
++        const lng = parseFloat(p.longitude);
++
++        const circle = L.circle([lat, lng], {
+           radius: 80,
+-          strokeColor: '#ffd700',
+-          strokeOpacity: 0.9,
+-          strokeWeight: 2,
++          color: '#ffd700',
++          weight: 2,
++          dashArray: '6 4',
+           fillColor: '#ffd700',
+-          fillOpacity: 0.1
+-        });
+-
+-        const marker = new google.maps.Marker({
+-          position: { lat: parseFloat(p.latitude), lng: parseFloat(p.longitude) },
+-          map,
+-          title: `PREDICTED: ${p.category}`,
+-          label: {
+-            text: 'P',
+-            color: '#ffd700',
+-            fontWeight: '800',
+-            fontSize: '11px'
+-          },
+-          icon: {
+-            path: google.maps.SymbolPath.CIRCLE,
+-            scale: 14,
+-            fillColor: 'transparent',
+-            fillOpacity: 0,
+-            strokeColor: '#ffd700',
+-            strokeWeight: 2
+-          }
+-        });
+-
+-        const infoWin = new google.maps.InfoWindow({
+-          content: `
+-            <div style="font-family:Inter,sans-serif;padding:4px 0;color:#000">
+-              <strong>⚠️ Predicted Risk: ${p.category}</strong>
+-              <div style="margin-top:4px;font-size:12px;color:#555">${p.reason || ''}</div>
+-              <div style="margin-top:6px;font-size:11px">Confidence: ${Math.round((p.confidence||0)*100)}%</div>
+-            </div>
+-          `
+-        });
+-
+-        marker.addListener('click', () => infoWin.open(map, marker));
++          fillOpacity: 0.08
++        }).bindPopup(`
++          <div style="font-family:Inter,sans-serif;padding:4px 0">
++            <strong>⚠️ Predicted Risk: ${p.category}</strong>
++            <div style="margin-top:4px;font-size:12px;color:#555">${p.reason || ''}</div>
++            <div style="margin-top:6px;font-size:11px">Confidence: ${Math.round((p.confidence||0)*100)}%</div>
++          </div>
++        `);
++
++        // Yellow 'P' label marker
++        const icon = L.divIcon({
++          className: '',
++          html: `<div style="width:22px;height:22px;border-radius:50%;border:2px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#ffd700;background:rgba(0,0,0,.5)">P</div>`,
++          iconSize: [22, 22],
++          iconAnchor: [11, 11]
++        });
++        const marker = L.marker([lat, lng], { icon }).bindPopup(`
++          <div style="font-family:Inter,sans-serif;padding:4px 0">
++            <strong>⚠️ Predicted Risk: ${p.category}</strong>
++            <div style="margin-top:4px;font-size:12px;color:#555">${p.reason || ''}</div>
++            <div style="margin-top:6px;font-size:11px">Confidence: ${Math.round((p.confidence||0)*100)}%</div>
++          </div>
++        `);
++
++        circle.addTo(map);
++        marker.addTo(map);
+         predictionOverlays.push(circle, marker);
+       });
+     }
+@@ -1476,15 +1476,9 @@
+ 
+   </script>
+ 
+-  <!-- Load Google Maps after config is defined -->
+-  <script>
+-    (function() {
+-      const script = document.createElement('script');
+-      script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}&callback=initMap&libraries=visualization`;
+-      script.async = true;
+-      script.defer = true;
+-      document.head.appendChild(script);
+-    })();
++  <script>
++    // Initialize Leaflet map on DOM ready (no async callback needed)
++    window.addEventListener('load', initMap);
+   </script>
+ 
+ </body>
+[diff_block_end]
+
+Please note that the above snippet only shows the MODIFIED lines from the last change. It shows up to 3 lines of unchanged lines before and after the modified lines. The actual file contents may have many more lines not shown.

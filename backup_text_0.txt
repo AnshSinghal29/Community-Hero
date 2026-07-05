@@ -1,0 +1,808 @@
+Created At: 2026-06-27T07:08:35Z
+Completed At: 2026-06-27T07:08:36Z
+File Path: `file:///c:/Community%20Hero/Asset/ANTIGRAVITY_VIBE_CODING_GUIDE.md`
+Total Lines: 866
+Total Bytes: 22872
+Showing lines 1 to 800
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: # Community Hero - Antigravity IDE Vibe Coding Guide
+2: 
+3: **Goal**: Use Antigravity IDE's multi-agent architecture to build Community Hero in 3 days  
+4: **Approach**: Manager View orchestration with 3 specialized agents working in parallel
+5: 
+6: ---
+7: 
+8: ## 📋 Prerequisites (Complete Before Day 1)
+9: 
+10: ### Install Antigravity IDE
+11: ```bash
+12: # macOS
+13: curl -L https://antigravity.google.com/downloads/latest/macos -o Antigravity.dmg
+14: open Antigravity.dmg
+15: 
+16: # Linux
+17: wget https://antigravity.google.com/downloads/latest/linux -O Antigravity.tar.gz
+18: tar -xzf Antigravity.tar.gz
+19: ./antigravity-install.sh
+20: 
+21: # Windows
+22: # Download MSI from https://antigravity.google.com/downloads/latest/windows
+23: ```
+24: 
+25: ### Setup Your API Keys
+26: 1. Get **Gemini API key**: https://ai.google.dev/
+27: 2. Get **Anthropic API key**: https://console.anthropic.com/
+28: 3. Setup **Google Cloud credentials** for Sheets/Drive APIs
+29: 
+30: ```bash
+31: # Export environment variables
+32: export GEMINI_API_KEY="your_gemini_key"
+33: export ANTHROPIC_API_KEY="sk-ant-..."
+34: export GOOGLE_APPLICATION_CREDENTIALS="/path/to/service_account.json"
+35: ```
+36: 
+37: ### Initialize Agent Skills (Optional but Recommended)
+38: ```bash
+39: # One-time setup for agent memory system
+40: npx agent-skills-setup-for-antigravity community-hero
+41: ```
+42: 
+43: This creates `.agent/` folder with rules, skills, and workflows.
+44: 
+45: ---
+46: 
+47: ## 🚀 DAY 1: Backend + Agent Setup
+48: 
+49: ### Step 1: Create Project in Antigravity
+50: 
+51: 1. **Open Antigravity IDE**
+52: 2. **Create new workspace**: `community-hero`
+53: 3. **Select template**: Python (or Node.js)
+54: 4. **Click "Launch Manager View"**
+55: 
+56: You'll see:
+57: - Left panel: Project structure
+58: - Center: File editor
+59: - Right: Manager panel with agent controls
+60: 
+61: ### Step 2: Switch to Manager View
+62: 
+63: In top-right corner:
+64: - Click **"Manager"** (bird's-eye view)
+65: - You'll see: Agents, Tasks, Implementation Plans, Artifacts
+66: 
+67: ### Step 3: Create Agent Team
+68: 
+69: In Manager View, click **"+ Create Agents"**
+70: 
+71: Create 3 specialized agents:
+72: 
+73: **Agent 1: Backend Engineer**
+74: ```
+75: Name: Backend-Engineer
+76: Role: Python Flask API developer
+77: Skills: Flask, API design, error handling
+78: Primary task: Build /api/report endpoint
+79: ```
+80: 
+81: **Agent 2: AI Integration Specialist**
+82: ```
+83: Name: AI-Integration-Specialist
+84: Role: Claude API + Anthropic integration
+85: Skills: Vision API, extended thinking, agentic loops
+86: Primary task: Implement analyze_issue() function
+87: ```
+88: 
+89: **Agent 3: Data Engineer**
+90: ```
+91: Name: Data-Engineer
+92: Role: Google Sheets + data persistence
+93: Skills: gspread, data validation, schema design
+94: Primary task: Implement save_to_sheets()
+95: ```
+96: 
+97: ### Step 4: Create Context File
+98: 
+99: In project root, create `CONTEXT.md`:
+100: 
+101: ```markdown
+102: # Community Hero - Agentic System Context
+103: 
+104: ## Architecture
+105: - Backend: Python Flask + Claude Anthropic API
+106: - Frontend: HTML5 + Vanilla JS + Google Maps
+107: - Data: Google Sheets + Google Drive
+108: - Agents: Gemini 3 Pro (orchestration), Claude Opus (analysis)
+109: 
+110: ## Key Constraints
+111: - No hardcoded test data (use real Ghaziabad locations)
+112: - Image must be analyzed with vision capability
+113: - Extended thinking enabled for agent reasoning
+114: - Duplicate detection within 50m radius, 7-day window
+115: - All code must have error handling + logging
+116: 
+117: ## Success Criteria
+118: - Agent correctly categorizes images (80%+ accuracy)
+119: - Data persists to Google Sheets without errors
+120: - System responds in <3 seconds per request
+121: - Extended thinking logged to files
+122: 
+123: ## Communication Rules
+124: - Use JSON for agent outputs (no markdown)
+125: - Prefix logs: [AGENT], [ERROR], [SUCCESS]
+126: - Save reasoning to: logs/agent_reasoning.jsonl
+127: - All artifacts must be documented with docstrings
+128: ```
+129: 
+130: ### Step 5: Assign Day 1 Tasks
+131: 
+132: In Manager View:
+133: 
+134: **Task 1: Backend Skeleton (Backend-Engineer)**
+135: ```
+136: Create Flask app with these endpoints:
+137: - POST /api/report (multipart form: image, description, lat, lng)
+138: - GET /api/issues?category=&priority=
+139: - GET /api/stats
+140: 
+141: Requirements:
+142: - CORS enabled
+143: - Error handling with meaningful HTTP codes
+144: - Logging of all requests
+145: - Service account auth for Google APIs
+146: 
+147: Return: app.py, requirements.txt, config.py
+148: ```
+149: 
+150: **Task 2: Agentic Analysis Function (AI-Integration-Specialist)**
+151: ```
+152: Implement analyze_issue() function:
+153: 
+154: Input: image_base64, description, latitude, longitude, recent_reports
+155: Output: JSON with category, severity, priority, reasoning, confidence
+156: 
+157: Use Claude Opus 4.6 with:
+158: - Vision capability (analyze image)
+159: - Extended thinking enabled (budget: 8000 tokens)
+160: - System prompt from: IMPLEMENTATION.md
+161: 
+162: Function signature:
+163: def analyze_issue(image_base64: str, description: str, lat: float, lng: float, recent_reports: list) -> dict:
+164:     # Claude API call here
+165:     # Extract thinking if present
+166:     # Return structured JSON
+167: 
+168: Return: agent.py with full implementation
+169: ```
+170: 
+171: **Task 3: Google Sheets Integration (Data-Engineer)**
+172: ```
+173: Implement google_sheets.py:
+174: 
+175: Functions:
+176: 1. save_to_sheets(analysis, image_url, timestamp) -> report_id
+177:    - Append row to Google Sheet
+178:    - Return unique ID (format: GH-{timestamp})
+179: 
+180: 2. get_from_sheets(category=None, priority=None) -> list[dict]
+181:    - Fetch all rows from Sheet
+182:    - Filter by category/priority if provided
+183: 
+184: 3. get_recent_reports(lat, lng, days=7, radius=50) -> list[dict]
+185:    - For duplicate detection
+186:    - Check last 7 days
+187:    - Return reports within 50m radius
+188: 
+189: Column structure:
+190: Timestamp, Category, Priority, Severity, Latitude, Longitude, Address, Reasoning, Action, ImageURL, Confidence, Status
+191: 
+192: Return: google_sheets.py, auth setup docs
+193: ```
+194: 
+195: ### Step 6: Monitor Agent Progress
+196: 
+197: **In Manager View**:
+198: - Watch task list update in real-time
+199: - Click on any agent to see:
+200:   - Implementation plan
+201:   - Code diffs
+202:   - Browser interactions (if applicable)
+203:   - Artifacts (task breakdowns, summaries)
+204: 
+205: **Review artifacts after each agent completes**:
+206: - [ ] Accept or request changes
+207: - [ ] Comment on code diffs if needed
+208: - [ ] Agent learns from your feedback
+209: 
+210: ### Step 7: End-of-Day 1 Testing
+211: 
+212: When all 3 agents complete, test locally:
+213: 
+214: ```bash
+215: cd community-hero
+216: 
+217: # Install dependencies
+218: pip install -r requirements.txt
+219: 
+220: # Set environment variables
+221: export ANTHROPIC_API_KEY=sk-ant-...
+222: export GOOGLE_SHEETS_ID=your_sheet_id
+223: 
+224: # Run Flask
+225: python backend/app.py
+226: 
+227: # In another terminal, test endpoint
+228: curl -X POST http://localhost:5000/api/report \
+229:   -F "image=@test_pothole.jpg" \
+230:   -F "description=Large pothole on main road" \
+231:   -F "latitude=28.6692" \
+232:   -F "longitude=77.0669"
+233: ```
+234: 
+235: **Expected output**:
+236: ```json
+237: {
+238:   "success": true,
+239:   "report_id": "GH-20260625...",
+240:   "analysis": {
+241:     "category": "pothole",
+242:     "priority": "urgent",
+243:     "severity_score": 4,
+244:     "confidence": 0.92,
+245:     "reasoning": "Deep pothole on main road, safety hazard..."
+246:   }
+247: }
+248: ```
+249: 
+250: **Checkpoint**: ✅ All agents completed without errors  
+251: **Deliverable**: Working Flask API + agent analysis + Sheets integration
+252: 
+253: ---
+254: 
+255: ## 🎬 DAY 2: Frontend + Live Testing
+256: 
+257: ### Step 1: Create Frontend Agent
+258: 
+259: In Manager View, click **"+ Add Agent"**
+260: 
+261: ```
+262: Name: Frontend-Engineer
+263: Role: HTML/JS/UX developer
+264: Skills: HTML5, Vanilla JS, Google Maps API, responsive design
+265: Primary task: Build interactive dashboard
+266: ```
+267: 
+268: ### Step 2: Assign Frontend Task
+269: 
+270: **Task 1: Dashboard HTML (Frontend-Engineer)**
+271: 
+272: ```
+273: Create single-file dashboard (dashboard.html):
+274: 
+275: Features:
+276: 1. Google Map
+277:    - Centered on Ghaziabad (28.6692, 77.0669)
+278:    - Fetch issues from /api/issues
+279:    - Color-coded markers (red=urgent, orange=high, blue=medium, green=low)
+280:    - Click marker → infowindow with category + address
+281:    - Click on map → open report form
+282: 
+283: 2. Stats Panel (top-right)
+284:    - Total Issues
+285:    - Urgent Count
+286:    - High Count
+287:    - % Resolved
+288:    - Auto-refresh every 5 seconds
+289: 
+290: 3. Issues List (scrollable)
+291:    - Each card: category badge + priority + description + location
+292:    - Colored left border by priority
+293:    - Click card → center map on issue
+294: 
+295: 4. Report Form Modal
+296:    - File input (image)
+297:    - Textarea (description)
+298:    - Text inputs (address, latitude, longitude)
+299:    - Submit button
+300:    - Show "Analyzing..." state
+301:    - Success notification
+302: 
+303: 5. Styling
+304:    - Modern, clean
+305:    - Responsive (mobile-friendly)
+306:    - Purple gradient header
+307:    - Color-coded cards
+308:    - No external UI frameworks
+309: 
+310: Constants:
+311: const BACKEND_URL = 'http://localhost:5000';
+312: const GHAZIABAD_CENTER = { lat: 28.6692, lng: 77.0669 };
+313: 
+314: Return: dashboard.html (self-contained, single file)
+315: ```
+316: 
+317: ### Step 3: Agent Works on Frontend
+318: 
+319: Watch in Manager View:
+320: - Agent generates implementation plan (30–60 seconds)
+321: - Agent writes code, tests, iterates
+322: - Agent may ask clarifying questions in comments
+323: 
+324: **If agent gets stuck**: 
+325: - Add inline comment: `// HELP: The form isn't submitting, check CORS headers on backend`
+326: - Agent adjusts approach based on your feedback
+327: 
+328: ### Step 4: Deploy & Test Locally
+329: 
+330: Once agent finishes:
+331: 
+332: ```bash
+333: # Start backend (if not running)
+334: python backend/app.py
+335: 
+336: # Serve frontend
+337: python -m http.server 8000
+338: 
+339: # Visit: http://localhost:8000/dashboard.html
+340: ```
+341: 
+342: **Test checklist**:
+343: - [ ] Map displays Ghaziabad
+344: - [ ] Stats panel shows 0 issues initially
+345: - [ ] Click map → form opens
+346: - [ ] Form submission works (submit test issue)
+347: - [ ] Form closes on success
+348: - [ ] New issue appears on map
+349: - [ ] New issue appears in list
+350: - [ ] Stats update in real-time
+351: - [ ] Click issue card → map centers on it
+352: 
+353: ### Step 5: Create Real Test Data
+354: 
+355: Manually create 5–10 test issues via the form:
+356: 
+357: 1. **Pothole (Sector 7)** - Urgent
+358:    - Photo: [pothole image]
+359:    - Description: "Large pothole, 8cm deep"
+360:    - Location: 28.6692, 77.0669
+361: 
+362: 2. **Water Leak (Sector 9)** - High
+363:    - Photo: [water leak image]
+364:    - Description: "Pipeline leak, water accumulating"
+365:    - Location: 28.6745, 77.0750
+366: 
+367: 3. **Streetlight (Sector 11)** - Medium
+368:    - Photo: [damaged light image]
+369:    - Description: "Broken streetlight, exposed wiring"
+370:    - Location: 28.6600, 77.0600
+371: 
+372: (Continue with 2–7 more realistic issues)
+373: 
+374: **Verify in Google Sheets**:
+375: - Open your Google Sheet
+376: - All test issues appear as rows
+377: - Check: Timestamp, Category, Priority, Address all populated
+378: - Click image URLs → should open in Google Drive (if images uploaded)
+379: 
+380: ### Step 6: Deploy to Live URL
+381: 
+382: **Option A: Ngrok (Fastest)**
+383: ```bash
+384: # Terminal 1: Backend running
+385: python backend/app.py
+386: 
+387: # Terminal 2: Ngrok tunnel
+388: ngrok http 5000
+389: # Get URL: https://abc123.ngrok.io
+390: 
+391: # Terminal 3: Update dashboard.html
+392: # Replace: const BACKEND_URL = 'http://localhost:5000';
+393: # With: const BACKEND_URL = 'https://abc123.ngrok.io';
+394: 
+395: # Terminal 4: Serve frontend
+396: python -m http.server 8000
+397: # Visit: http://localhost:8000/dashboard.html
+398: ```
+399: 
+400: **Option B: Vercel (More professional)**
+401: ```bash
+402: # Create vercel.json
+403: cat > vercel.json << 'EOF'
+404: {
+405:   "buildCommand": "npm install",
+406:   "outputDirectory": "."
+407: }
+408: EOF
+409: 
+410: vercel deploy
+411: # Follow prompts, get shareable URL
+412: ```
+413: 
+414: ### Step 7: Extended Thinking Enhancement
+415: 
+416: Create new agent task:
+417: 
+418: **Task 2: Enhanced Agent with Thinking (AI-Integration-Specialist)**
+419: 
+420: ```
+421: Update agent.py to use extended thinking:
+422: 
+423: 1. Add thinking parameter to Claude API call:
+424:    thinking={
+425:        "type": "enabled",
+426:        "budget_tokens": 8000
+427:    }
+428: 
+429: 2. Update system prompt to ask agent to reason about:
+430:    - Image hazards (depth, severity, safety)
+431:    - Duplicate detection (compare to recent_reports)
+432:    - Citizen impact (how many people affected)
+433:    - Escalation decision (should this be urgent?)
+434:    - Resolution estimate (days to fix)
+435: 
+436: 3. Extract thinking from response:
+437:    response.content has blocks with type="thinking"
+438:    Log thinking to: logs/agent_reasoning.jsonl
+439:    Include in returned JSON: "thinking": "..."
+440: 
+441: 4. Optional: Update dashboard to show reasoning
+442:    - Click issue → display "Agent Reasoning" section
+443:    - Show the thinking text
+444: 
+445: Test with 2–3 new test issues to verify reasoning is logged
+446: 
+447: Return: Updated agent.py with thinking enabled
+448: ```
+449: 
+450: **Checkpoint**: ✅ Dashboard + real test data + extended thinking  
+451: **Deliverable**: Fully functional end-to-end system with agent reasoning visible
+452: 
+453: ---
+454: 
+455: ## 🎁 DAY 3: Innovation + Differentiators + Polish
+456: 
+457: ### Step 1: Create Prediction Agent
+458: 
+459: **Agent 4: ML/Analytics Engineer**
+460: 
+461: ```
+462: Name: ML-Analytics-Engineer
+463: Role: Data analysis + predictions
+464: Skills: Data aggregation, pattern recognition, forecasting
+465: Primary task: Implement hotspot prediction
+466: ```
+467: 
+468: ### Step 2: Assign Prediction Task
+469: 
+470: **Task 1: Prediction Endpoint (ML-Analytics-Engineer)**
+471: 
+472: ```
+473: Create GET /api/predict endpoint:
+474: 
+475: Logic:
+476: 1. Fetch all issues from Google Sheets (last 7 days)
+477: 2. Group by location (cluster nearby issues)
+478: 3. Find hotspots (3+ reports same category within 50m)
+479: 4. Use Claude agent to predict high-risk areas
+480: 
+481: Agent reasoning:
+482: - "Sector 7 has 3 potholes in 7 days → more likely upcoming due to monsoon"
+483: - "Water leaks near old infrastructure areas → higher risk"
+484: - Use seasonal context (monsoon = more water leaks)
+485: 
+486: Return JSON:
+487: {
+488:   "high_risk_locations": [
+489:     {
+490:       "latitude": 28.6692,
+491:       "longitude": 77.0669,
+492:       "category": "pothole",
+493:       "confidence": 0.89,
+494:       "reason": "3 potholes reported nearby; monsoon increases risk"
+495:     }
+496:   ],
+497:   "timestamp": "2026-06-25T..."
+498: }
+499: 
+500: Update dashboard.html:
+501: - Plot predicted locations as yellow/dashed circles
+502: - Label: "PREDICTED"
+503: - Show reason on hover
+504: 
+505: Return: Updated agent.py + backend route + dashboard changes
+506: ```
+507: 
+508: ### Step 3: Voice Input Feature
+509: 
+510: **Task 2: Voice Reporting (Frontend-Engineer)**
+511: 
+512: ```
+513: Add voice recording to dashboard.html:
+514: 
+515: In report form, add:
+516: 1. "🎤 Record Voice Report" button
+517: 2. Click starts recording (Web Speech API)
+518: 3. Recording indicator (red dot, "Recording...")
+519: 4. Transcription appears in description field
+520: 5. User can edit before submitting
+521: 
+522: Implementation:
+523: - Use navigator.mediaDevices.getUserMedia() OR
+524: - Web Speech API: navigator.mediaDevices.getDisplayMedia()
+525: - Language: 'en-IN' for Indian English
+526: - Stop button after recording
+527: - Display transcript in textarea
+528: 
+529: Test: Record "Large pothole on sector 7 main road"
+530: → Should appear in description field automatically
+531: 
+532: Return: Updated dashboard.html with voice input
+533: ```
+534: 
+535: ### Step 4: Documentation Generation
+536: 
+537: **Task 3: Documentation (Backend-Engineer)**
+538: 
+539: ```
+540: Create comprehensive docs:
+541: 
+542: 1. README.md
+543:    - Problem statement
+544:    - Solution overview
+545:    - Tech stack
+546:    - Quick start (setup + run locally)
+547:    - Evaluation evidence mapping
+548: 
+549: 2. API.md
+550:    - All endpoints documented
+551:    - Request/response examples
+552:    - Error codes
+553:    - Rate limiting (if applicable)
+554: 
+555: 3. ARCHITECTURE.md
+556:    - System diagram (ASCII or Mermaid)
+557:    - Data flow explanation
+558:    - Agentic reasoning flowchart
+559:    - Database schema
+560: 
+561: 4. DEPLOYMENT.md
+562:    - Ngrok setup (testing)
+563:    - Vercel setup (production)
+564:    - Environment variables needed
+565:    - Troubleshooting
+566: 
+567: 5. Update GEMINI.md (agent identity file)
+568:    - Project name, version
+569:    - Agent personality (helpful, precise, testing-first)
+570:    - Custom rules (always test, log reasoning, verify)
+571: 
+572: Return: README.md, API.md, ARCHITECTURE.md, DEPLOYMENT.md
+573: ```
+574: 
+575: ### Step 5: Record Demo Video
+576: 
+577: **Task 4: Demo Video Instructions**
+578: 
+579: ```
+580: Create 2–3 minute video walkthrough:
+581: 
+582: Script:
+583: 1. Intro (20 sec):
+584:    "This is Community Hero, an AI-powered civic issue tracker"
+585:    "Citizens report issues, we prioritize with AI"
+586: 
+587: 2. Report an issue (40 sec):
+588:    - Click map → form opens
+589:    - Upload pothole photo
+590:    - Write: "Large pothole on sector 7 main road"
+591:    - Submit
+592:    - Show "Analyzing..."
+593:    - Show result: URGENT, pothole, severity 4
+594: 
+595: 3. View dashboard (40 sec):
+596:    - Show all issues on map (color-coded)
+597:    - Show stats updating
+598:    - Click issue → map centers
+599:    - Show Google Sheets data (transparency)
+600: 
+601: 4. Show agent reasoning (20 sec):
+602:    - Click issue → show "Agent Reasoning"
+603:    - Read reasoning out loud
+604: 
+605: 5. Outro (10 sec):
+606:    "Claude API for analysis, Google Sheets for transparency, Maps for visualization"
+607: 
+608: Tools:
+609: - Use Loom, OBS, or QuickTime
+610: - Upload to YouTube (unlisted)
+611: - Get link
+612: 
+613: Return: YouTube link (put in README)
+614: ```
+615: 
+616: ### Step 6: Final Polish & Testing
+617: 
+618: **In Manager View, create cleanup task**:
+619: 
+620: ```
+621: Final Polish Task:
+622: 
+623: 1. Code Quality
+624:    - Add docstrings to all functions
+625:    - Add type hints to Python code
+626:    - Fix any linting errors
+627:    - Add comments for complex logic
+628: 
+629: 2. Error Handling
+630:    - Verify all endpoints have try/except
+631:    - Test with invalid inputs
+632:    - Verify error messages are helpful
+633:    - Log all errors
+634: 
+635: 3. UI Polish
+636:    - Test on mobile (responsive check)
+637:    - Add loading spinners
+638:    - Add success/error notifications
+639:    - Smooth transitions
+640: 
+641: 4. Performance
+642:    - Verify response time < 3 seconds
+643:    - Check image file sizes
+644:    - Optimize dashboard loading
+645: 
+646: 5. Final Verification
+647:    - All 5+ test issues visible on map
+648:    - Agent reasoning logged and visible
+649:    - Predictions endpoint working
+650:    - Voice input functional (if implemented)
+651:    - Documentation complete
+652:    - Demo video uploaded
+653: 
+654: Return: Polished, production-ready code
+655: ```
+656: 
+657: ### Step 7: Commit & Deploy
+658: 
+659: ```bash
+660: # Final commit
+661: git add -A
+662: git commit -m "feat(final): Extended thinking + prediction + voice + polish"
+663: 
+664: # Deploy
+665: vercel deploy  # Or keep Ngrok running
+666: 
+667: # Verify live system works
+668: curl https://your-domain.vercel.app/api/stats
+669: # Should return valid JSON with your test data
+670: ```
+671: 
+672: **Final Checkpoint**: ✅ Everything working, documented, demoed  
+673: **Deliverable**: Submission-ready Community Hero
+674: 
+675: ---
+676: 
+677: ## 📊 Manager View Workflow Summary
+678: 
+679: ### What You See in Manager View:
+680: 
+681: **Left Panel (Task Queue)**:
+682: - [ ] Backend Skeleton
+683: - [ ] Agentic Analysis
+684: - [ ] Sheets Integration
+685: - [ ] Frontend Dashboard
+686: - [ ] Extended Thinking
+687: - [ ] Prediction Layer
+688: - [ ] Voice Input
+689: - [ ] Documentation
+690: - [ ] Final Polish
+691: 
+692: **Center Panel (Implementation Plans)**:
+693: - Agent's approach/strategy (high-level)
+694: - Breakdown of what they'll do
+695: - Time estimate
+696: - Risk assessment
+697: 
+698: **Right Panel (Artifacts)**:
+699: - **Task List**: What agent plans to do (checklist)
+700: - **Implementation Plan**: Detailed roadmap
+701: - **Code Diffs**: Changes made (accept/reject)
+702: - **Browser Screenshots**: Agent testing in real browser
+703: - **Logs**: Terminal output, errors, successes
+704: - **Summaries**: Agent's summary of work done
+705: 
+706: ### How to Manage Agents:
+707: 
+708: **If agent finishes a task**:
+709: - Review artifacts (click diff)
+710: - If good: ✅ Accept (or do nothing, auto-accept)
+711: - If needs changes: Add comment, agent reads and adjusts
+712: 
+713: **If agent gets stuck**:
+714: - Add comment: `"The Flask route isn't working. Check that CORS is enabled."`
+715: - Agent re-reads your feedback
+716: - Agent adjusts approach
+717: 
+718: **If you want multiple agents working simultaneously**:
+719: - Manager View allows this natively
+720: - One agent works on backend, one on frontend, one on docs
+721: - No manual coordination needed
+722: - All artifacts sync in real-time
+723: 
+724: ---
+725: 
+726: ## 🎯 Day-by-Day Checklist
+727: 
+728: ### ✅ Day 1 End
+729: - [ ] Antigravity open with 3 agents assigned
+730: - [ ] `CONTEXT.md` created with project guidelines
+731: - [ ] 3 agents complete their tasks (backend, agent, sheets)
+732: - [ ] Local testing works (Flask API responds)
+733: - [ ] All agents' artifacts reviewed
+734: - [ ] 1 commit: "feat(backend): Flask API + Claude agent + Sheets"
+735: 
+736: ### ✅ Day 2 End
+737: - [ ] Frontend agent created and assigned
+738: - [ ] Dashboard.html generated by agent
+739: - [ ] Local testing passes (form submission works)
+740: - [ ] 5+ real test issues created manually
+741: - [ ] Google Sheets populated with data
+742: - [ ] Extended thinking added to agent
+743: - [ ] Live URL deployed (Ngrok or Vercel)
+744: - [ ] All artifacts reviewed
+745: - [ ] 1 commit: "feat(frontend): Dashboard + extended thinking"
+746: 
+747: ### ✅ Day 3 End
+748: - [ ] Prediction agent created
+749: - [ ] Hotspot prediction endpoint working
+750: - [ ] Voice input added to frontend
+751: - [ ] Documentation complete (README, API, Architecture)
+752: - [ ] Demo video recorded and uploaded
+753: - [ ] Final polish completed
+754: - [ ] All systems tested end-to-end
+755: - [ ] All artifacts reviewed
+756: - [ ] 1 commit: "feat(final): Prediction + voice + documentation"
+757: 
+758: ---
+759: 
+760: ## 🔥 Pro Tips for Antigravity Vibe Coding
+761: 
+762: ### 1. Use Clear Task Specifications
+763: Instead of: "Build the API"  
+764: Better: "Create POST /api/report endpoint that accepts multipart form with image, description, lat, lng. Validate inputs. Call Claude API with vision. Return JSON with category, priority, reasoning."
+765: 
+766: ### 2. Review Agent Artifacts Immediately
+767: - Don't wait until end of day
+768: - Review after each task completion
+769: - Agent learns from your feedback
+770: - Comment on code diffs to train agent style
+771: 
+772: ### 3. Let Agents Iterate
+773: - If agent's first try isn't perfect, don't fix it
+774: - Add comment: "This approach is close but needs [specific change]"
+775: - Agent will refactor based on your guidance
+776: - This builds agent's understanding of your preferences
+777: 
+778: ### 4. Use Browser Artifacts
+779: - Antigravity shows browser screenshots
+780: - Agent tested dashboard in real browser before committing
+781: - You see what it looks like without running locally (sometimes)
+782: - If broken, agent sees it and fixes
+783: 
+784: ### 5. Multi-Agent Power
+785: - Assign 3 agents to 3 tasks simultaneously
+786: - Don't wait for one to finish before starting next
+787: - Manager View orchestrates in background
+788: - You review all in parallel
+789: 
+790: ### 6. Terminal Control
+791: - Agents can run `pip install`, `python app.py`, `curl`, `git` commands
+792: - Artifact shows terminal output
+793: - If test fails, you see the error
+794: - Agent sees error and fixes
+795: 
+796: ### 7. Feedback Loop
+797: **This is the vibe coding secret**:
+798: ```
+799: Agent writes code → You review → You comment
+800: → Agent reads comment → Agent refactors → You review again
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

@@ -1,0 +1,540 @@
+Created At: 2026-06-27T08:06:28Z
+Completed At: 2026-06-27T08:06:28Z
+File Path: `file:///c:/Community%20Hero/Instructions/MCP_CONNECTOR_INTEGRATION_GUIDE.md`
+Total Lines: 532
+Total Bytes: 14899
+Showing lines 1 to 532
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: # Community Hero - MCP Connector Integration Guide
+2: 
+3: **Purpose**: Use Model Context Protocol (MCP) servers to enhance UI development, data management, and automate repetitive tasks in your Anthropic API development workflow.
+4: 
+5: ---
+6: 
+7: ## 🔗 Recommended MCP Connectors Setup
+8: 
+9: ### 1. Google Drive MCP (HIGHEST PRIORITY)
+10: **Why**: Centralized image storage, organized by category, auditable by judges
+11: 
+12: #### Setup
+13: ```bash
+14: # Install
+15: npm install @anthropic-ai/sdk google-auth-library-nodejs googleapis
+16: 
+17: # Environment
+18: export GOOGLE_DRIVE_CREDENTIALS=$(cat service_account.json | base64)
+19: ```
+20: 
+21: #### Integration in Backend
+22: 
+23: ```python
+24: # backend/google_drive.py
+25: from google.colab import auth
+26: from googleapiclient.discovery import build
+27: import os
+28: 
+29: class DriveManager:
+30:     def __init__(self):
+31:         self.drive = build('drive', 'v3')
+32:         self.root_folder_id = self._ensure_root_folder()
+33:     
+34:     def _ensure_root_folder(self):
+35:         """Ensure Community Hero root folder exists in Drive."""
+36:         results = self.drive.files().list(
+37:             q="name='Community-Hero' and mimeType='application/vnd.google-apps.folder' and trashed=false",
+38:             spaces='drive',
+39:             pageSize=1
+40:         ).execute()
+41:         
+42:         items = results.get('files', [])
+43:         if items:
+44:             return items[0]['id']
+45:         
+46:         # Create if not exists
+47:         file_metadata = {
+48:             'name': 'Community-Hero',
+49:             'mimeType': 'application/vnd.google-apps.folder'
+50:         }
+51:         folder = self.drive.files().create(body=file_metadata, fields='id').execute()
+52:         return folder.get('id')
+53:     
+54:     def _ensure_category_folder(self, category):
+55:         """Ensure category subfolder exists."""
+56:         results = self.drive.files().list(
+57:             q=f"name='{category}' and mimeType='application/vnd.google-apps.folder' and trashed=false and '{self.root_folder_id}' in parents",
+58:             spaces='drive',
+59:             pageSize=1
+60:         ).execute()
+61:         
+62:         items = results.get('files', [])
+63:         if items:
+64:             return items[0]['id']
+65:         
+66:         # Create if not exists
+67:         file_metadata = {
+68:             'name': category,
+69:             'mimeType': 'application/vnd.google-apps.folder',
+70:             'parents': [self.root_folder_id]
+71:         }
+72:         folder = self.drive.files().create(body=file_metadata, fields='id').execute()
+73:         return folder.get('id')
+74:     
+75:     def upload_issue_image(self, image_bytes, report_id, category):
+76:         """Upload issue image to Drive."""
+77:         folder_id = self._ensure_category_folder(category)
+78:         
+79:         file_metadata = {
+80:             'name': f'{report_id}.jpg',
+81:             'parents': [folder_id]
+82:         }
+83:         
+84:         media = MediaIoBaseUpload(BytesIO(image_bytes), mimetype='image/jpeg', resumable=True)
+85:         file = self.drive.files().create(body=file_metadata, media_body=media, fields='id, webViewLink').execute()
+86:         
+87:         return {
+88:             'file_id': file.get('id'),
+89:             'web_view_link': file.get('webViewLink'),
+90:             'drive_url': f"https://drive.google.com/file/d/{file.get('id')}/view"
+91:         }
+92: 
+93: # backend/app.py - Updated route
+94: from google_drive import DriveManager
+95: 
+96: drive_manager = DriveManager()
+97: 
+98: @app.route('/api/report', methods=['POST'])
+99: def create_report():
+100:     """Create report and upload image to Drive."""
+101:     
+102:     data = request.json
+103:     image_file = request.files.get('image')
+104:     
+105:     # Run agentic analysis
+106:     analysis = analyze_issue(...)
+107:     
+108:     # Upload image to Drive
+109:     drive_info = drive_manager.upload_issue_image(
+110:         image_bytes=image_file.read(),
+111:         report_id=report_id,
+112:         category=analysis['category']
+113:     )
+114:     
+115:     # Save to Sheets with Drive link
+116:     report_id = save_to_sheets(
+117:         analysis=analysis,
+118:         image_url=drive_info['drive_url'],  # Use Drive link instead of local
+119:         timestamp=datetime.now().isoformat()
+120:     )
+121:     
+122:     return jsonify({
+123:         'success': True,
+124:         'report_id': report_id,
+125:         'image_drive_url': drive_info['drive_url'],
+126:         'analysis': analysis
+127:     })
+128: ```
+129: 
+130: #### Benefits for Judges
+131: - Click any image URL in the Google Sheets → Opens in Google Drive
+132: - Verify authenticity of reports
+133: - See organized folder structure: `Community-Hero/pothole/`, `Community-Hero/water-leak/`, etc.
+134: - Real-time audit trail of all submissions
+135: 
+136: ---
+137: 
+138: ### 2. Google Sheets MCP (HIGHEST PRIORITY)
+139: **Why**: Live data visibility, easier Claude artifact generation for dashboard
+140: 
+141: #### Setup
+142: ```bash
+143: # Already using gspread, but MCP integration allows Claude to:
+144: # - Update Sheets directly while building
+145: # - Query live data while developing dashboard
+146: # - Test aggregation queries before deploying
+147: ```
+148: 
+149: #### Integration in Claude Artifacts
+150: 
+151: When Claude is building your dashboard, it can now:
+152: 
+153: ```javascript
+154: // In dashboard.html, Claude-generated code can now verify data:
+155: async function initDashboardWithLiveData() {
+156:     // Claude artifact can call this to verify real Sheets structure
+157:     const response = await fetch('/api/sheets-schema');
+158:     const schema = await response.json();
+159:     
+160:     // Schema includes:
+161:     // {
+162:     //   "columns": ["Timestamp", "Category", "Priority", "Severity", ...],
+163:     //   "sample_rows": 5,
+164:     //   "total_issues": 47
+165:     // }
+166:     
+167:     console.log('Connected to live Sheets:', schema);
+168: }
+169: ```
+170: 
+171: #### MCP Benefit
+172: You can tell Claude: *"Connect to my Google Sheets, verify the current schema, then build a dashboard that matches the actual column structure."*
+173: 
+174: No more guessing about column names — Claude reads directly from your live sheet.
+175: 
+176: ---
+177: 
+178: ### 3. GitHub MCP (MEDIUM PRIORITY)
+179: **Why**: Version control, iteration history for judges
+180: 
+181: #### Setup
+182: ```bash
+183: export GITHUB_TOKEN=ghp_your_token_here
+184: 
+185: # Initialize repo
+186: git init
+187: git add .
+188: git commit -m "Community Hero MVP - Day 1"
+189: git push origin main
+190: ```
+191: 
+192: #### Integration in Development Loop
+193: 
+194: When Claude is building features, it can:
+195: 
+196: ```
+197: "Please implement the prediction layer and commit to GitHub with a descriptive message."
+198: ```
+199: 
+200: Claude will:
+201: 1. Write the code
+202: 2. Run tests
+203: 3. Commit with message: `feat(predict): Add 7-day hotspot prediction using agent reasoning`
+204: 4. Push to your repo
+205: 
+206: **Benefit**: Judges see your iteration history, not just final code.
+207: 
+208: #### GitHub Structure (Recommended)
+209: ```
+210: community-hero/
+211: ├── backend/
+212: │   ├── agent.py (agentic analysis)
+213: │   ├── app.py (Flask API)
+214: │   ├── google_sheets.py (data storage)
+215: │   ├── google_drive.py (image management)
+216: │   └── requirements.txt
+217: ├── frontend/
+218: │   └── dashboard.html (single-file UI)
+219: ├── docs/
+220: │   ├── ARCHITECTURE.md
+221: │   ├── API.md
+222: │   └── AGENT-REASONING.md
+223: ├── tests/
+224: │   ├── test_agent.py
+225: │   └── test_api.py
+226: ├── Dockerfile
+227: ├── docker-compose.yml
+228: └── README.md
+229: ```
+230: 
+231: ---
+232: 
+233: ### 4. Web Search MCP (OPTIONAL, +5 POINTS)
+234: **Why**: Agent can research context to make smarter decisions
+235: 
+236: #### Use Case: Contextual Analysis
+237: 
+238: When an issue is reported, the agent can search for:
+239: - Recent news about that area
+240: - Infrastructure maintenance schedules
+241: - Weather conditions
+242: 
+243: ```python
+244: # backend/agent.py - Enhanced
+245: def analyze_issue_with_context(image_base64, description, lat, lng, recent_reports):
+246:     """Add web search context to agent analysis."""
+247:     
+248:     # Search for recent news
+249:     news_context = search_web(
+250:         query=f"Ghaziabad infrastructure {get_sector_from_coords(lat, lng)}"
+251:     )
+252:     
+253:     # Search for weather
+254:     weather = search_web(query=f"Ghaziabad weather {datetime.now().strftime('%Y-%m-%d')}")
+255:     
+256:     # Include in agent prompt
+257:     enhanced_prompt = f"""
+258:     Current context:
+259:     - Recent news: {news_context}
+260:     - Weather: {weather}
+261:     - Recent reports in area: {recent_reports}
+262:     
+263:     Use this context to determine if this issue is urgent.
+264:     """
+265:     
+266:     return analyze_issue(image_base64, description, lat, lng, enhanced_prompt)
+267: ```
+268: 
+269: **Judges will notice**: Agent reasoning mentions real-time news ("flooding reported in Sector 9 today, water leak likely urgent").
+270: 
+271: ---
+272: 
+273: ## 🧠 Prompts to Use with MCP Connectors
+274: 
+275: ### Prompt 1: Build Backend with Drive Integration
+276: ```
+277: You have access to Google Drive MCP. 
+278: 
+279: Build a Flask API that:
+280: 
+281: 1. When a citizen submits an issue photo:
+282:    - Analyze with Claude vision
+283:    - Upload image to Google Drive in folder: Community-Hero/{category}/
+284:    - Save metadata to Google Sheets
+285:    - Return Drive shareable link
+286: 
+287: 2. Endpoint: POST /api/report
+288:    - Input: image (file), description (text), lat (float), lng (float)
+289:    - Output: JSON with category, priority, drive_url
+290:    
+291: 3. Use this Google Drive structure:
+292:    Community-Hero/
+293:    ├── pothole/
+294:    ├── water_leak/
+295:    ├── streetlight/
+296:    └── waste_management/
+297: 
+298: Code should:
+299: - Create folders if they don't exist
+300: - Auto-organize by category
+301: - Make images shareable (permissions: anyone can view)
+302: ```
+303: 
+304: ### Prompt 2: Build Dashboard Querying Live Sheets
+305: ```
+306: You have access to Google Sheets MCP.
+307: 
+308: Build an HTML dashboard that:
+309: 
+310: 1. Connects to Google Sheets "Community Hero - Issues"
+311: 2. Reads live issue data:
+312:    - All issues with: category, priority, lat, lng, address, image_url
+313: 3. For each issue:
+314:    - Draw a marker on Google Maps
+315:    - Color-coded by priority
+316:    - Clicking marker opens an infowindow
+317: 
+318: 4. Right sidebar:
+319:    - List all issues sorted by priority
+320:    - Real-time stats: total, urgent count, high count
+321:    
+322: 5. The Sheets API returns:
+323:    {
+324:      "issues": [
+325:        {
+326:          "timestamp": "2026-06-25T...",
+327:          "category": "pothole",
+328:          "priority": "high",
+329:          "latitude": 28.6692,
+330:          "longitude": 77.0669,
+331:          "address": "Sector 7, Ghaziabad",
+332:          "image_url": "https://drive.google.com/...",
+333:          "status": "open|resolved"
+334:        }
+335:      ],
+336:      "stats": {
+337:        "total": 47,
+338:        "urgent": 3,
+339:        "high": 12,
+340:        "resolved": 8
+341:      }
+342:    }
+343: 
+344: Build it to exactly match this schema.
+345: ```
+346: 
+347: ### Prompt 3: Commit to GitHub with MCP
+348: ```
+349: You have access to GitHub MCP.
+350: 
+351: After implementing the prediction layer:
+352: 
+353: 1. Test locally (ensure no errors)
+354: 2. Commit with message: "feat(predict): Add 7-day hotspot prediction using agent reasoning"
+355: 3. Include in commit message:
+356:    - What was added
+357:    - How to test it
+358:    - Example output
+359: 4. Push to main branch
+360: 5. Create a summary comment in the commit explaining the agentic reasoning
+361: 
+362: This will show judges your iteration process.
+363: ```
+364: 
+365: ---
+366: 
+367: ## 🎬 Recommended Development Flow with MCPs
+368: 
+369: ### Day 1: Backend + Drive Integration
+370: ```bash
+371: # Claude builds with MCP connectors:
+372: 1. Generate Python Flask app
+373: 2. Generate Google Drive manager class
+374: 3. Test Drive upload with sample image
+375: 4. Commit to GitHub: "feat(backend): Initial Flask API + Drive integration"
+376: ```
+377: 
+378: ### Day 2: Frontend + Sheets Integration
+379: ```bash
+380: # Claude builds with MCP connectors:
+381: 1. Query live Google Sheets schema
+382: 2. Generate HTML dashboard matching actual schema
+383: 3. Test with live data from Sheets
+384: 4. Add real-time stats calculation
+385: 5. Commit to GitHub: "feat(frontend): Dashboard with live Sheets integration"
+386: ```
+387: 
+388: ### Day 3: Polish + Prediction
+389: ```bash
+390: # Claude builds with MCP connectors:
+391: 1. Add extended thinking to agent
+392: 2. Implement prediction layer
+393: 3. Test with live data
+394: 4. Add Web Search for context
+395: 5. Final commit: "feat(agent): Extended thinking + hotspot prediction + web context"
+396: ```
+397: 
+398: ---
+399: 
+400: ## 🔐 Environment Setup Checklist
+401: 
+402: Before passing to Claude artifacts, set these env vars:
+403: 
+404: ```bash
+405: # .env file
+406: export ANTHROPIC_API_KEY=sk-ant-...
+407: export GOOGLE_SHEETS_CREDS=$(cat service_account.json | base64)
+408: export GOOGLE_DRIVE_CREDS=$(cat service_account.json | base64)
+409: export GITHUB_TOKEN=ghp_...
+410: export GOOGLE_MAPS_API_KEY=AIza...
+411: 
+412: # For local testing
+413: export FLASK_ENV=development
+414: export BACKEND_URL=http://localhost:5000
+415: ```
+416: 
+417: ---
+418: 
+419: ## 📊 What Judges See (Why MCPs Matter)
+420: 
+421: ### Without MCPs
+422: - Hardcoded data in dashboard
+423: - No image audit trail
+424: - Code is opaque
+425: 
+426: ### With MCPs (Your Approach)
+427: - **Live Google Drive folder**: Organized, verifiable images
+428: - **Live Google Sheets**: Real-time data, transparent storage
+429: - **GitHub history**: Shows iteration, not just final code
+430: - **Web context**: Agent reasoning includes real-world data
+431: 
+432: **Result**: Judges see a production-grade system, not a hackathon project.
+433: 
+434: ---
+435: 
+436: ## 🚀 Quick Start Command for Claude
+437: 
+438: When you pass this to Claude for artifact generation:
+439: 
+440: ```
+441: "Build the Community Hero system using these MCP connectors:
+442: - Google Drive: Store issue images organized by category
+443: - Google Sheets: Live issue database
+444: - GitHub: Version control with commits after each feature
+445: - Web Search: Add real-time context to agent analysis
+446: 
+447: Follow the implementation guide at:
+448: [path to COMMUNITY_HERO_IMPLEMENTATION.md]
+449: 
+450: Start with Day 1 tasks: Python Flask backend + Drive integration.
+451: Test with 5 real Ghaziabad test cases."
+452: ```
+453: 
+454: Claude will:
+455: 1. Read the implementation guide
+456: 2. Access your Sheets to verify schema
+457: 3. Access your Drive to set up folder structure
+458: 4. Write the code
+459: 5. Commit to GitHub automatically
+460: 6. Return ready-to-test backend
+461: 
+462: ---
+463: 
+464: ## Troubleshooting MCPs
+465: 
+466: ### Issue: "Permission denied" on Google Drive
+467: **Solution**: 
+468: ```bash
+469: # Regenerate service account JSON in Google Cloud Console
+470: # Make sure your service account has:
+471: # - Drive API enabled
+472: # - Google Sheets API enabled
+473: # - Correct permissions in service account
+474: ```
+475: 
+476: ### Issue: "Sheets API quota exceeded"
+477: **Solution**:
+478: ```python
+479: # Add caching to reduce API calls
+480: from functools import lru_cache
+481: import time
+482: 
+483: @lru_cache(maxsize=1)
+484: def get_issues_cached():
+485:     """Cache Sheets data for 60 seconds."""
+486:     return get_from_sheets()
+487: 
+488: # Refresh every 60 seconds
+489: def get_issues_with_cache():
+490:     if time.time() % 60 == 0:
+491:         get_issues_cached.cache_clear()
+492:     return get_issues_cached()
+493: ```
+494: 
+495: ### Issue: GitHub MCP fails to commit
+496: **Solution**:
+497: ```bash
+498: # Ensure GitHub token has correct permissions
+499: # Token should have: repo, workflow, admin:public_key
+500: 
+501: # Test locally first
+502: git config --global user.email "your-email@example.com"
+503: git config --global user.name "Community Hero Bot"
+504: ```
+505: 
+506: ---
+507: 
+508: ## 📈 Success Metrics
+509: 
+510: After integrating MCPs, you should have:
+511: 
+512: - ✅ **Google Drive folder** with 50+ organized images (judges can browse)
+513: - ✅ **Google Sheets** with live issue data (judges can query)
+514: - ✅ **GitHub repo** with 10+ commits showing iteration
+515: - ✅ **Agent reasoning** that includes web context
+516: - ✅ **Response time**: < 3 seconds per report (fast!)
+517: 
+518: ---
+519: 
+520: ## Final Note
+521: 
+522: MCPs transform your hackathon project from *"works on my machine"* to *"production-ready system with transparency."*
+523: 
+524: Judges will be impressed not just by features, but by how you've structured data, organized assets, and shown your iteration process.
+525: 
+526: **Use them strategically.** They're your secret weapon. 🚀
+527: 
+528: ---
+529: 
+530: **Last Updated**: June 25, 2026  
+531: **MCP Version Tested**: claude-opus-4-6 with integrated tools
+532: 
+The above content shows the entire, complete file contents of the requested file.

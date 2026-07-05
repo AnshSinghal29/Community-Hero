@@ -1,0 +1,381 @@
+Created At: 2026-06-27T08:15:29Z
+Completed At: 2026-06-27T08:15:29Z
+File Path: `file:///c:/Community%20Hero/frontend/dashboard.html`
+Total Lines: 1472
+Total Bytes: 48970
+Showing lines 1100 to 1472
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1100:     }
+1101: 
+1102:     function startAutoRefresh() {
+1103:       autoRefreshTimer = setInterval(() => {
+1104:         loadStats();
+1105:         loadIssues();
+1106:       }, 5000);
+1107:     }
+1108: 
+1109:     // ─────────────────────────────────────────────────────────────
+1110:     // RENDER ISSUES LIST
+1111:     // ─────────────────────────────────────────────────────────────
+1112:     function renderIssueList(list) {
+1113:       const container = document.getElementById('issues-list');
+1114: 
+1115:       if (list.length === 0) {
+1116:         container.innerHTML = `
+1117:           <div class="empty-state">
+1118:             <div class="empty-icon">🗺️</div>
+1119:             <div class="empty-text">No issues found.<br>Click the map or "Report New Issue" to add one.</div>
+1120:           </div>`;
+1121:         return;
+1122:       }
+1123: 
+1124:       container.innerHTML = '';
+1125: 
+1126:       list.forEach((issue, idx) => {
+1127:         const emoji = CATEGORY_EMOJI[issue.category] || '🔧';
+1128:         const catLabel = (issue.category || 'other').replace(/_/g, ' ');
+1129:         const ts = issue.timestamp ? new Date(issue.timestamp).toLocaleDateString('en-IN', { day:'numeric', month:'short' }) : '';
+1130: 
+1131:         const card = document.createElement('div');
+1132:         card.className = `issue-card ${issue.priority}`;
+1133:         card.id = `issue-card-${idx}`;
+1134:         card.innerHTML = `
+1135:           <div class="issue-card-top">
+1136:             <span class="badge badge-category">${emoji} ${catLabel}</span>
+1137:             <span class="badge badge-${issue.priority}">${issue.priority}</span>
+1138:           </div>
+1139:           <div class="issue-desc">${issue.description || issue.reasoning || 'No description'}</div>
+1140:           <div class="issue-meta">
+1141:             <span>📍 ${issue.address || `${issue.latitude?.toFixed(4)}, ${issue.longitude?.toFixed(4)}`}</span>
+1142:             <span>${ts}</span>
+1143:           </div>
+1144:         `;
+1145: 
+1146:         // Reasoning drawer (collapsible)
+1147:         const drawer = document.createElement('div');
+1148:         drawer.className = 'reasoning-drawer';
+1149:         drawer.id = `reasoning-${idx}`;
+1150:         if (issue.reasoning) {
+1151:           drawer.innerHTML = `
+1152:             <div class="reasoning-label">🤖 Agent Reasoning</div>
+1153:             ${issue.reasoning}
+1154:             ${issue.thinking ? `<br><br><strong style="color:var(--clr-purple3)">Extended Thinking:</strong><br>${issue.thinking}` : ''}
+1155:           `;
+1156:         }
+1157: 
+1158:         card.addEventListener('click', () => {
+1159:           // Toggle reasoning
+1160:           const isOpen = drawer.style.display === 'block';
+1161:           drawer.style.display = isOpen ? 'none' : 'block';
+1162: 
+1163:           // Highlight card
+1164:           if (selectedCard) selectedCard.classList.remove('active');
+1165:           card.classList.add('active');
+1166:           selectedCard = card;
+1167: 
+1168:           // Pan map (Leaflet)
+1169:           if (map && issue.latitude && issue.longitude) {
+1170:             map.setView([parseFloat(issue.latitude), parseFloat(issue.longitude)], 16);
+1171:           }
+1172:         });
+1173: 
+1174:         container.appendChild(card);
+1175:         container.appendChild(drawer);
+1176:       });
+1177:     }
+1178: 
+1179:     // ─────────────────────────────────────────────────────────────
+1180:     // RENDER MAP MARKERS (Leaflet circleMarkers)
+1181:     // ─────────────────────────────────────────────────────────────
+1182:     function renderMarkers(list) {
+1183:       markers.forEach(m => map.removeLayer(m));
+1184:       markers = [];
+1185: 
+1186:       list.forEach(issue => {
+1187:         const lat = parseFloat(issue.latitude);
+1188:         const lng = parseFloat(issue.longitude);
+1189:         if (!lat || !lng) return;
+1190: 
+1191:         const color = PRIORITY_COLORS[issue.priority] || '#888';
+1192:         const emoji = CATEGORY_EMOJI[issue.category] || '🔧';
+1193:         const catLabel = (issue.category || 'other').replace(/_/g, ' ');
+1194: 
+1195:         const marker = L.circleMarker([lat, lng], {
+1196:           radius: 11,
+1197:           fillColor: color,
+1198:           color: '#ffffff',
+1199:           weight: 2,
+1200:           opacity: 0.9,
+1201:           fillOpacity: 0.85
+1202:         }).bindPopup(`
+1203:           <div style="font-family:Inter,sans-serif;padding:4px 0;min-width:180px">
+1204:             <strong>${emoji} ${catLabel}</strong>
+1205:             <div style="margin-top:4px;font-size:12px;color:#555">${issue.address || 'No address'}</div>
+1206:             <div style="margin-top:6px">
+1207:               <span style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;text-transform:uppercase">${issue.priority}</span>
+1208:             </div>
+1209:             ${issue.reasoning ? `<div style="margin-top:8px;font-size:11px;color:#777;line-height:1.4">${issue.reasoning.slice(0,120)}...</div>` : ''}
+1210:           </div>
+1211:         `);
+1212: 
+1213:         marker.addTo(map);
+1214:         markers.push(marker);
+1215:       });
+1216:     }
+1217: 
+1218:     // ─────────────────────────────────────────────────────────────
+1219:     // RENDER PREDICTIONS (Leaflet circles — dashed yellow)
+1220:     // ─────────────────────────────────────────────────────────────
+1221:     function renderPredictions(predictions) {
+1222:       predictionOverlays.forEach(o => map.removeLayer(o));
+1223:       predictionOverlays = [];
+1224: 
+1225:       predictions.forEach(p => {
+1226:         const lat = parseFloat(p.latitude);
+1227:         const lng = parseFloat(p.longitude);
+1228: 
+1229:         const circle = L.circle([lat, lng], {
+1230:           radius: 80,
+1231:           color: '#ffd700',
+1232:           weight: 2,
+1233:           dashArray: '6 4',
+1234:           fillColor: '#ffd700',
+1235:           fillOpacity: 0.08
+1236:         }).bindPopup(`
+1237:           <div style="font-family:Inter,sans-serif;padding:4px 0">
+1238:             <strong>⚠️ Predicted Risk: ${p.category}</strong>
+1239:             <div style="margin-top:4px;font-size:12px;color:#555">${p.reason || ''}</div>
+1240:             <div style="margin-top:6px;font-size:11px">Confidence: ${Math.round((p.confidence||0)*100)}%</div>
+1241:           </div>
+1242:         `);
+1243: 
+1244:         // Yellow 'P' label marker
+1245:         const icon = L.divIcon({
+1246:           className: '',
+1247:           html: `<div style="width:22px;height:22px;border-radius:50%;border:2px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#ffd700;background:rgba(0,0,0,.5)">P</div>`,
+1248:           iconSize: [22, 22],
+1249:           iconAnchor: [11, 11]
+1250:         });
+1251:         const marker = L.marker([lat, lng], { icon }).bindPopup(`
+1252:           <div style="font-family:Inter,sans-serif;padding:4px 0">
+1253:             <strong>⚠️ Predicted Risk: ${p.category}</strong>
+1254:             <div style="margin-top:4px;font-size:12px;color:#555">${p.reason || ''}</div>
+1255:             <div style="margin-top:6px;font-size:11px">Confidence: ${Math.round((p.confidence||0)*100)}%</div>
+1256:           </div>
+1257:         `);
+1258: 
+1259:         circle.addTo(map);
+1260:         marker.addTo(map);
+1261:         predictionOverlays.push(circle, marker);
+1262:       });
+1263:     }
+1264: 
+1265:     // ─────────────────────────────────────────────────────────────
+1266:     // REPORT FORM
+1267:     // ─────────────────────────────────────────────────────────────
+1268:     function openModal() {
+1269:       document.getElementById('modal').classList.add('open');
+1270:       document.getElementById('analysis-result').style.display = 'none';
+1271:       document.getElementById('report-form').style.display = '';
+1272:     }
+1273: 
+1274:     function closeModal() {
+1275:       document.getElementById('modal').classList.remove('open');
+1276:       document.getElementById('report-form').reset();
+1277:       document.getElementById('img-preview').style.display = 'none';
+1278:       document.getElementById('analysis-result').style.display = 'none';
+1279:     }
+1280: 
+1281:     document.getElementById('btn-report').addEventListener('click', openModal);
+1282:     document.getElementById('modal-close').addEventListener('click', closeModal);
+1283:     document.getElementById('modal').addEventListener('click', (e) => {
+1284:       if (e.target === document.getElementById('modal')) closeModal();
+1285:     });
+1286: 
+1287:     // Image preview
+1288:     document.getElementById('image').addEventListener('change', (e) => {
+1289:       const file = e.target.files[0];
+1290:       if (!file) return;
+1291:       const url = URL.createObjectURL(file);
+1292:       document.getElementById('img-preview-src').src = url;
+1293:       document.getElementById('img-preview').style.display = 'block';
+1294:     });
+1295: 
+1296:     // Form submit
+1297:     document.getElementById('report-form').addEventListener('submit', async (e) => {
+1298:       e.preventDefault();
+1299: 
+1300:       const image = document.getElementById('image').files[0];
+1301:       const desc  = document.getElementById('description').value.trim();
+1302:       const lat   = document.getElementById('latitude').value;
+1303:       const lng   = document.getElementById('longitude').value;
+1304: 
+1305:       if (!image) return showToast('error', 'Missing Image', 'Please select a photo of the issue.');
+1306:       if (!desc)  return showToast('error', 'Missing Description', 'Please describe the issue.');
+1307:       if (!lat || !lng) return showToast('error', 'Missing Location', 'Please set a location (click the map or enter coordinates).');
+1308: 
+1309:       setSubmitting(true);
+1310: 
+1311:       const formData = new FormData();
+1312:       formData.append('image', image);
+1313:       formData.append('description', desc);
+1314:       formData.append('latitude', lat);
+1315:       formData.append('longitude', lng);
+1316:       formData.append('address', document.getElementById('address').value.trim());
+1317: 
+1318:       try {
+1319:         const res = await fetch(`${BACKEND_URL}/api/report`, {
+1320:           method: 'POST',
+1321:           body: formData
+1322:         });
+1323: 
+1324:         const data = await res.json();
+1325: 
+1326:         if (data.success) {
+1327:           showAnalysisResult(data.analysis);
+1328:           showToast('success', 'Issue Reported!', `ID: ${data.report_id} — Priority: ${data.analysis?.priority || '?'}`);
+1329:           document.getElementById('report-form').style.display = 'none';
+1330: 
+1331:           // Refresh data
+1332:           setTimeout(() => { loadIssues(); loadStats(); }, 1000);
+1333:         } else {
+1334:           showToast('error', 'Submission Failed', data.error || 'Unknown error');
+1335:         }
+1336:       } catch (err) {
+1337:         showToast('error', 'Network Error', err.message);
+1338:       } finally {
+1339:         setSubmitting(false);
+1340:       }
+1341:     });
+1342: 
+1343:     function setSubmitting(loading) {
+1344:       const btn = document.getElementById('btn-submit');
+1345:       const spinner = document.getElementById('spinner');
+1346:       const btnText = document.getElementById('btn-text');
+1347:       btn.disabled = loading;
+1348:       spinner.style.display = loading ? 'block' : 'none';
+1349:       btnText.textContent = loading ? 'Analyzing with Claude AI...' : '🚀 Analyze & Submit';
+1350:     }
+1351: 
+1352:     function showAnalysisResult(analysis) {
+1353:       if (!analysis) return;
+1354:       const r = document.getElementById('analysis-result');
+1355:       r.style.display = 'block';
+1356: 
+1357:       document.getElementById('res-category').textContent = (analysis.category || '—').replace(/_/g, ' ');
+1358:       document.getElementById('res-priority').innerHTML = `<span class="badge badge-${analysis.priority}">${analysis.priority || '—'}</span>`;
+1359:       document.getElementById('res-severity').textContent = `${analysis.severity_score || '—'}/5`;
+1360:       document.getElementById('res-confidence').textContent = analysis.confidence_overall ? Math.round(analysis.confidence_overall * 100) + '%' : '—';
+1361:       document.getElementById('res-reasoning').textContent = analysis.reasoning || '';
+1362:     }
+1363: 
+1364:     // ─────────────────────────────────────────────────────────────
+1365:     // VOICE INPUT
+1366:     // ─────────────────────────────────────────────────────────────
+1367:     (function setupVoice() {
+1368:       const btn = document.getElementById('btn-voice');
+1369:       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+1370: 
+1371:       if (!SpeechRecognition) {
+1372:         btn.title = 'Voice not supported in this browser';
+1373:         btn.style.opacity = '.4';
+1374:         return;
+1375:       }
+1376: 
+1377:       const recognition = new SpeechRecognition();
+1378:       recognition.lang = 'en-IN';
+1379:       recognition.continuous = false;
+1380:       recognition.interimResults = false;
+1381: 
+1382:       let recording = false;
+1383: 
+1384:       btn.addEventListener('click', () => {
+1385:         if (recording) {
+1386:           recognition.stop();
+1387:         } else {
+1388:           recognition.start();
+1389:           btn.classList.add('recording');
+1390:           btn.title = 'Recording... Click to stop';
+1391:           recording = true;
+1392:         }
+1393:       });
+1394: 
+1395:       recognition.onresult = (e) => {
+1396:         const transcript = e.results[0][0].transcript;
+1397:         document.getElementById('description').value = transcript;
+1398:         showToast('info', 'Voice Captured', `"${transcript.slice(0,80)}${transcript.length > 80 ? '...' : ''}"`);
+1399:       };
+1400: 
+1401:       recognition.onend = () => {
+1402:         btn.classList.remove('recording');
+1403:         btn.title = 'Record voice report';
+1404:         recording = false;
+1405:       };
+1406: 
+1407:       recognition.onerror = (e) => {
+1408:         btn.classList.remove('recording');
+1409:         recording = false;
+1410:         if (e.error !== 'no-speech') {
+1411:           showToast('error', 'Voice Error', e.error);
+1412:         }
+1413:       };
+1414:     })();
+1415: 
+1416:     // ─────────────────────────────────────────────────────────────
+1417:     // FILTERS
+1418:     // ─────────────────────────────────────────────────────────────
+1419:     document.getElementById('filter-priority').addEventListener('change', loadIssues);
+1420:     document.getElementById('filter-category').addEventListener('change', loadIssues);
+1421: 
+1422:     // ─────────────────────────────────────────────────────────────
+1423:     // TOAST NOTIFICATIONS
+1424:     // ─────────────────────────────────────────────────────────────
+1425:     function showToast(type, title, msg) {
+1426:       const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+1427:       const container = document.getElementById('toast-container');
+1428: 
+1429:       const toast = document.createElement('div');
+1430:       toast.className = 'toast';
+1431:       toast.innerHTML = `
+1432:         <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+1433:         <div>
+1434:           <div class="toast-title">${title}</div>
+1435:           <div class="toast-msg">${msg}</div>
+1436:         </div>
+1437:       `;
+1438: 
+1439:       container.appendChild(toast);
+1440: 
+1441:       setTimeout(() => {
+1442:         toast.classList.add('removing');
+1443:         setTimeout(() => toast.remove(), 250);
+1444:       }, 4000);
+1445:     }
+1446: 
+1447:     // ─────────────────────────────────────────────────────────────
+1448:     // HELPERS
+1449:     // ─────────────────────────────────────────────────────────────
+1450:     function animateNumber(id, target) {
+1451:       const el = document.getElementById(id);
+1452:       const current = parseInt(el.textContent) || 0;
+1453:       if (current === target) return;
+1454:       const step = target > current ? 1 : -1;
+1455:       const steps = Math.min(Math.abs(target - current), 30);
+1456:       let i = 0;
+1457:       const timer = setInterval(() => {
+1458:         el.textContent = Math.round(current + (step * (i / steps) * Math.abs(target - current)));
+1459:         if (++i > steps) { el.textContent = target; clearInterval(timer); }
+1460:       }, 20);
+1461:     }
+1462: 
+1463:   </script>
+1464: 
+1465:   <script>
+1466:     // Initialize Leaflet map on DOM ready (no async callback needed)
+1467:     window.addEventListener('load', initMap);
+1468:   </script>
+1469: 
+1470: </body>
+1471: </html>
+1472: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

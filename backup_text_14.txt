@@ -1,0 +1,309 @@
+Created At: 2026-06-27T08:16:13Z
+Completed At: 2026-06-27T08:16:13Z
+File Path: `file:///c:/Community%20Hero/frontend/dashboard.html`
+Total Lines: 1472
+Total Bytes: 48970
+Showing lines 800 to 1100
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+800:     <div class="stat-card">
+801:       <div class="stat-icon total">📊</div>
+802:       <div>
+803:         <div class="stat-value" id="stat-total">—</div>
+804:         <div class="stat-label">Total Issues</div>
+805:       </div>
+806:     </div>
+807:     <div class="stat-card">
+808:       <div class="stat-icon urgent">🚨</div>
+809:       <div>
+810:         <div class="stat-value" id="stat-urgent" style="color:var(--clr-urgent)">—</div>
+811:         <div class="stat-label">Urgent</div>
+812:       </div>
+813:     </div>
+814:     <div class="stat-card">
+815:       <div class="stat-icon high">⚠️</div>
+816:       <div>
+817:         <div class="stat-value" id="stat-high" style="color:var(--clr-high)">—</div>
+818:         <div class="stat-label">High Priority</div>
+819:       </div>
+820:     </div>
+821:     <div class="stat-card">
+822:       <div class="stat-icon success">✅</div>
+823:       <div>
+824:         <div class="stat-value" id="stat-resolved" style="color:var(--clr-low)">—</div>
+825:         <div class="stat-label">% Resolved</div>
+826:       </div>
+827:     </div>
+828:   </div>
+829: 
+830:   <!-- ════ MAIN GRID ════ -->
+831:   <div class="main-grid">
+832: 
+833:     <!-- Map Panel -->
+834:     <div class="map-panel">
+835:       <div id="map"></div>
+836:       <button class="map-overlay-btn" id="btn-report">
+837:         ➕ Report New Issue
+838:       </button>
+839:       <div class="map-legend">
+840:         <div class="legend-title">Priority</div>
+841:         <div class="legend-item"><div class="legend-dot" style="background:var(--clr-urgent)"></div> Urgent</div>
+842:         <div class="legend-item"><div class="legend-dot" style="background:var(--clr-high)"></div> High</div>
+843:         <div class="legend-item"><div class="legend-dot" style="background:var(--clr-medium)"></div> Medium</div>
+844:         <div class="legend-item"><div class="legend-dot" style="background:var(--clr-low)"></div> Low</div>
+845:         <div class="legend-item"><div class="legend-dot" style="background:#ffd700;border-style:dashed"></div> Predicted</div>
+846:       </div>
+847:     </div>
+848: 
+849:     <!-- Right Panel -->
+850:     <div class="right-panel">
+851:       <div class="panel-header">
+852:         <span class="panel-title">Live Issues</span>
+853:         <span class="panel-count" id="issues-count">0</span>
+854:       </div>
+855: 
+856:       <div class="filters">
+857:         <select class="filter-select" id="filter-priority" aria-label="Filter by priority">
+858:           <option value="">All Priorities</option>
+859:           <option value="urgent">🔴 Urgent</option>
+860:           <option value="high">🟠 High</option>
+861:           <option value="medium">🔵 Medium</option>
+862:           <option value="low">🟢 Low</option>
+863:         </select>
+864:         <select class="filter-select" id="filter-category" aria-label="Filter by category">
+865:           <option value="">All Categories</option>
+866:           <option value="pothole">🕳️ Pothole</option>
+867:           <option value="water_leak">💧 Water Leak</option>
+868:           <option value="streetlight">💡 Streetlight</option>
+869:           <option value="waste_management">🗑️ Waste</option>
+870:           <option value="other">🔧 Other</option>
+871:         </select>
+872:       </div>
+873: 
+874:       <div class="issues-scroll" id="issues-list">
+875:         <div class="empty-state">
+876:           <div class="empty-icon">🗺️</div>
+877:           <div class="empty-text">Loading issues from Google Sheets...</div>
+878:         </div>
+879:       </div>
+880:     </div>
+881:   </div>
+882: 
+883:   <!-- ════ REPORT MODAL ════ -->
+884:   <div class="modal-overlay" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+885:     <div class="modal">
+886:       <div class="modal-header">
+887:         <span class="modal-title" id="modal-title">📸 Report a Civic Issue</span>
+888:         <button class="modal-close" id="modal-close" aria-label="Close modal">✕</button>
+889:       </div>
+890: 
+891:       <div class="modal-body">
+892:         <form id="report-form" novalidate>
+893: 
+894:           <!-- Photo -->
+895:           <div class="form-group">
+896:             <label for="image">Photo of Issue *</label>
+897:             <input type="file" id="image" name="image" accept="image/*" required />
+898:             <div class="img-preview" id="img-preview">
+899:               <img id="img-preview-src" src="" alt="Preview" />
+900:             </div>
+901:           </div>
+902: 
+903:           <!-- Description + Voice -->
+904:           <div class="form-group">
+905:             <label for="description">Description *</label>
+906:             <div class="voice-wrap">
+907:               <textarea id="description" name="description"
+908:                 placeholder="Describe the issue in detail (e.g. Large pothole on Sector 7 main road, ~15cm deep)..."
+909:                 required></textarea>
+910:               <button type="button" class="btn-voice" id="btn-voice" title="Record voice report">🎤</button>
+911:             </div>
+912:           </div>
+913: 
+914:           <!-- Address -->
+915:           <div class="form-group">
+916:             <label for="address">Location Address</label>
+917:             <input type="text" id="address" name="address"
+918:               placeholder="e.g. Near Sector 7 Metro, Ghaziabad" />
+919:           </div>
+920: 
+921:           <!-- Coordinates -->
+922:           <div class="form-group coords-row">
+923:             <div>
+924:               <label for="latitude">Latitude *</label>
+925:               <input type="number" id="latitude" name="latitude" step="0.0001" required
+926:                 placeholder="28.6692" />
+927:             </div>
+928:             <div>
+929:               <label for="longitude">Longitude *</label>
+930:               <input type="number" id="longitude" name="longitude" step="0.0001" required
+931:                 placeholder="77.0669" />
+932:             </div>
+933:           </div>
+934: 
+935:           <button type="submit" class="btn-submit" id="btn-submit">
+936:             <div class="spinner" id="spinner"></div>
+937:             <span id="btn-text">🚀 Analyze & Submit</span>
+938:           </button>
+939:         </form>
+940: 
+941:         <!-- Analysis Result (shown after submission) -->
+942:         <div class="analysis-result" id="analysis-result">
+943:           <div class="result-header">🤖 Agent Analysis</div>
+944:           <div class="result-grid">
+945:             <div class="result-item">
+946:               <div class="result-key">Category</div>
+947:               <div class="result-val" id="res-category">—</div>
+948:             </div>
+949:             <div class="result-item">
+950:               <div class="result-key">Priority</div>
+951:               <div class="result-val" id="res-priority">—</div>
+952:             </div>
+953:             <div class="result-item">
+954:               <div class="result-key">Severity</div>
+955:               <div class="result-val" id="res-severity">—/5</div>
+956:             </div>
+957:             <div class="result-item">
+958:               <div class="result-key">Confidence</div>
+959:               <div class="result-val" id="res-confidence">—</div>
+960:             </div>
+961:           </div>
+962:           <div class="result-reasoning" id="res-reasoning"></div>
+963:         </div>
+964:       </div>
+965:     </div>
+966:   </div>
+967: 
+968:   <!-- ════ TOAST CONTAINER ════ -->
+969:   <div class="toast-container" id="toast-container"></div>
+970: 
+971:   <!-- ════ GOOGLE MAPS ════ -->
+972:   <script>
+973:     // ─────────────────────────────────────────────────────────────
+974:     // CONFIG — Only BACKEND_URL needed (no API keys!)
+975:     // ─────────────────────────────────────────────────────────────
+976:     const BACKEND_URL = 'http://localhost:5000';
+977:     const GHAZIABAD_CENTER = [28.6692, 77.0669]; // [lat, lng] for Leaflet
+978: 
+979:     // ─────────────────────────────────────────────────────────────
+980:     // STATE
+981:     // ─────────────────────────────────────────────────────────────
+982:     let map, issues = [], markers = [], predictionOverlays = [];
+983:     let selectedCard = null;
+984:     let autoRefreshTimer = null;
+985: 
+986:     const PRIORITY_COLORS = {
+987:       urgent: '#ff4757',
+988:       high:   '#ffa502',
+989:       medium: '#3d9bff',
+990:       low:    '#2ed573'
+991:     };
+992: 
+993:     const CATEGORY_EMOJI = {
+994:       pothole:          '🕳️',
+995:       water_leak:       '💧',
+996:       streetlight:      '💡',
+997:       waste_management: '🗑️',
+998:       other:            '🔧'
+999:     };
+1000: 
+1001:     // ─────────────────────────────────────────────────────────────
+1002:     // MAP INIT — Leaflet + OpenStreetMap (FREE, no API key)
+1003:     // ─────────────────────────────────────────────────────────────
+1004:     function initMap() {
+1005:       map = L.map('map', { zoomControl: true }).setView(GHAZIABAD_CENTER, 13);
+1006: 
+1007:       // Dark tile layer (CartoDB Dark Matter — free, no API key)
+1008:       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+1009:         attribution: '\u00a9 <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors \u00a9 <a href="https://carto.com/">CARTO</a>',
+1010:         subdomains: 'abcd',
+1011:         maxZoom: 19
+1012:       }).addTo(map);
+1013: 
+1014:       // Click on map → pre-fill coords + open modal
+1015:       map.on('click', (e) => {
+1016:         document.getElementById('latitude').value  = e.latlng.lat.toFixed(6);
+1017:         document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+1018:         openModal();
+1019:       });
+1020: 
+1021:       loadAll();
+1022:       startAutoRefresh();
+1023:     }
+1024: 
+1025:     // ─────────────────────────────────────────────────────────────
+1026:     // LOAD DATA
+1027:     // ─────────────────────────────────────────────────────────────
+1028:     async function loadAll() {
+1029:       await Promise.all([loadIssues(), loadStats(), loadPredictions()]);
+1030:       checkApiHealth();
+1031:     }
+1032: 
+1033:     async function loadIssues() {
+1034:       const cat = document.getElementById('filter-category').value;
+1035:       const pri = document.getElementById('filter-priority').value;
+1036: 
+1037:       let url = `${BACKEND_URL}/api/issues`;
+1038:       const params = [];
+1039:       if (cat) params.push(`category=${cat}`);
+1040:       if (pri) params.push(`priority=${pri}`);
+1041:       if (params.length) url += '?' + params.join('&');
+1042: 
+1043:       try {
+1044:         const res = await fetch(url);
+1045:         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+1046:         issues = await res.json();
+1047:         renderIssueList(issues);
+1048:         renderMarkers(issues);
+1049:         document.getElementById('issues-count').textContent = issues.length;
+1050:       } catch (e) {
+1051:         console.error('[ERROR] Could not load issues:', e);
+1052:         renderIssueList([]);
+1053:       }
+1054:     }
+1055: 
+1056:     async function loadStats() {
+1057:       try {
+1058:         const res = await fetch(`${BACKEND_URL}/api/stats`);
+1059:         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+1060:         const s = await res.json();
+1061:         animateNumber('stat-total',    s.total    ?? 0);
+1062:         animateNumber('stat-urgent',   s.urgent   ?? 0);
+1063:         animateNumber('stat-high',     s.high     ?? 0);
+1064:         document.getElementById('stat-resolved').textContent = (s.resolved_pct ?? 0) + '%';
+1065:       } catch (e) {
+1066:         console.error('[ERROR] Could not load stats:', e);
+1067:         ['stat-total','stat-urgent','stat-high','stat-resolved'].forEach(id => {
+1068:           document.getElementById(id).textContent = '—';
+1069:         });
+1070:       }
+1071:     }
+1072: 
+1073:     async function loadPredictions() {
+1074:       try {
+1075:         const res = await fetch(`${BACKEND_URL}/api/predict`);
+1076:         if (!res.ok) return;
+1077:         const data = await res.json();
+1078:         renderPredictions(data.high_risk_locations || []);
+1079:       } catch (e) {
+1080:         // Predictions are optional
+1081:       }
+1082:     }
+1083: 
+1084:     async function checkApiHealth() {
+1085:       try {
+1086:         const res = await fetch(`${BACKEND_URL}/api/health`);
+1087:         const dot = document.getElementById('api-status-dot');
+1088:         const txt = document.getElementById('api-status-text');
+1089:         if (res.ok) {
+1090:           dot.style.background = '#2ed573';
+1091:           txt.textContent = 'API Online';
+1092:         } else {
+1093:           dot.style.background = '#ff4757';
+1094:           txt.textContent = 'API Error';
+1095:         }
+1096:       } catch {
+1097:         document.getElementById('api-status-dot').style.background = '#ffa502';
+1098:         document.getElementById('api-status-text').textContent = 'Backend Offline';
+1099:       }
+1100:     }
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

@@ -1,0 +1,808 @@
+Created At: 2026-06-27T07:08:47Z
+Completed At: 2026-06-27T07:08:48Z
+File Path: `file:///c:/Community%20Hero/Instructions/DAY_BY_DAY_EXECUTION_ROADMAP.md`
+Total Lines: 856
+Total Bytes: 22007
+Showing lines 1 to 800
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: # Community Hero - 3-Day Execution Roadmap
+2: 
+3: **Goal**: Ship a production-ready agentic civic issue platform in 72 hours  
+4: **Target**: Win hackathon by maximizing Agentic Depth (20%) + Google Tech (15%) + Innovation (20%)
+5: 
+6: ---
+7: 
+8: ## 📅 DAY 1: Backend + Agentic Core (8–10 hours)
+9: 
+10: ### Hour 0–1: Setup & Planning
+11: - [ ] Create GitHub repo: `community-hero`
+12: - [ ] Create Google Cloud project, enable:
+13:   - [ ] Drive API
+14:   - [ ] Sheets API
+15:   - [ ] Maps API
+16: - [ ] Create Google Service Account → download JSON
+17: - [ ] Create Google Sheet: "Community Hero - Issues"
+18:   - Columns: Timestamp, Category, Priority, Severity, Latitude, Longitude, Address, Reasoning, RecommendedAction, ImageURL, Confidence, Status
+19: - [ ] Get Anthropic API key
+20: - [ ] Create `.env` file with all keys
+21: 
+22: **Checkpoint**: `ls -la .env` shows all required env vars
+23: 
+24: ---
+25: 
+26: ### Hour 1–3: Flask Backend Skeleton
+27: 
+28: **Tell Claude**:
+29: ```
+30: Build a Python Flask API for civic issue reporting.
+31: 
+32: Requirements:
+33: - POST /api/report: Accept multipart form data (image file, description, latitude, longitude)
+34: - GET /api/issues: Return all issues from database (optional: filter by category, priority)
+35: - GET /api/stats: Return summary stats (total issues, urgent count, resolved %)
+36: - Error handling with meaningful HTTP status codes
+37: - CORS enabled for frontend cross-origin requests
+38: 
+39: Use these libraries:
+40: - flask
+41: - python-anthropic
+42: - gspread
+43: - python-dotenv
+44: 
+45: Structure:
+46: ```
+47: backend/
+48:   ├── app.py (Flask routes + main logic)
+49:   ├── agent.py (Claude integration)
+50:   ├── google_sheets.py (Sheets operations)
+51:   └── requirements.txt
+52: ```
+53: 
+54: Return only the code. I'll handle testing."
+55: ```
+56: 
+57: **Locally validate**:
+58: ```bash
+59: cd backend
+60: pip install -r requirements.txt
+61: python app.py
+62: # Should start on http://localhost:5000
+63: ```
+64: 
+65: **Checkpoint**: `curl http://localhost:5000/api/stats` returns `{"total": 0, "urgent": 0, "resolved": 0}`
+66: 
+67: ---
+68: 
+69: ### Hour 3–5: Agentic Analysis Loop
+70: 
+71: **Tell Claude**:
+72: ```
+73: Implement the agent analysis function in backend/agent.py.
+74: 
+75: Requirements:
+76: 1. Function: analyze_issue(image_base64, description, latitude, longitude, recent_reports)
+77: 2. Uses Claude Anthropic API (model: claude-opus-4-6)
+78: 3. Sends image + text to Claude with this system prompt:
+79: 
+80: [PASTE THE FULL SYSTEM_PROMPT FROM IMPLEMENTATION.MD]
+81: 
+82: 4. Claude returns JSON:
+83: {
+84:   "category": "pothole|water_leak|streetlight|waste_management|other",
+85:   "severity_score": 1-5,
+86:   "priority": "urgent|high|medium|low",
+87:   "coordinates": {"latitude": 28.6692, "longitude": 77.0669},
+88:   "confidence": 0.85,
+89:   "reasoning": "...",
+90:   "recommended_action": "..."
+91: }
+92: 
+93: 5. Error handling:
+94:    - If image decode fails, return error
+95:    - If Claude API fails, retry with exponential backoff
+96:    - If JSON parsing fails, log and return default response
+97: 
+98: 6. Logging:
+99:    - Log every agent call with input + output
+100:    - Store logs in logs/agent_calls.jsonl
+101: 
+102: Testing:
+103: - Import and call directly in Python REPL
+104: - Test with 1 sample image first
+105: - Return the code when done."
+106: ```
+107: 
+108: **Local test**:
+109: ```python
+110: from agent import analyze_issue
+111: import base64
+112: 
+113: # Read a test image
+114: with open('test_pothole.jpg', 'rb') as f:
+115:     b64 = base64.b64encode(f.read()).decode()
+116: 
+117: result = analyze_issue(
+118:     image_base64=b64,
+119:     description="Large pothole on main road, car-sized",
+120:     latitude=28.6692,
+121:     longitude=77.0669,
+122:     recent_reports=[]
+123: )
+124: 
+125: print(result)
+126: # Should print valid JSON with category, priority, etc.
+127: ```
+128: 
+129: **Checkpoint**: Agent successfully analyzes 1 image and returns valid JSON with confidence > 0.8
+130: 
+131: ---
+132: 
+133: ### Hour 5–7: Google Sheets Integration
+134: 
+135: **Tell Claude**:
+136: ```
+137: Implement Google Sheets integration in backend/google_sheets.py.
+138: 
+139: Requirements:
+140: 1. Setup:
+141:    - Use gspread library
+142:    - Authenticate with service account JSON
+143:    - Connect to sheet named "Community Hero - Issues"
+144:    - Verify columns exist: Timestamp, Category, Priority, etc.
+145: 
+146: 2. Function: save_to_sheets(analysis, image_url, timestamp) -> report_id
+147:    - Convert analysis dict to row
+148:    - Append row to Sheets
+149:    - Return unique report ID (format: "GH-{timestamp}")
+150: 
+151: 3. Function: get_from_sheets(category=None, priority=None, limit=100) -> list[dict]
+152:    - Fetch all rows from Sheets
+153:    - Filter by category/priority if provided
+154:    - Return as list of dicts
+155: 
+156: 4. Function: get_recent_reports(latitude, longitude, days=7, radius_meters=50) -> list[dict]
+157:    - For duplicate detection
+158:    - Check last 7 days of reports
+159:    - Return reports within 50m radius
+160: 
+161: Testing:
+162: - Test save_to_sheets with dummy data
+163: - Verify row appears in Google Sheet
+164: - Return the code when done."
+165: ```
+166: 
+167: **Local test**:
+168: ```bash
+169: # Manually add 1 test row to Google Sheets
+170: # Run:
+171: python -c "from google_sheets import get_from_sheets; print(get_from_sheets())"
+172: # Should print the test row
+173: ```
+174: 
+175: **Checkpoint**: `get_from_sheets()` returns at least 1 row from your Google Sheet
+176: 
+177: ---
+178: 
+179: ### Hour 7–9: Connect Backend to Agent
+180: 
+181: **Tell Claude**:
+182: ```
+183: Update backend/app.py to wire the agent loop.
+184: 
+185: The POST /api/report endpoint should:
+186: 1. Extract image, description, latitude, longitude from request
+187: 2. Encode image to base64
+188: 3. Call get_recent_reports(lat, lng) to check for duplicates
+189: 4. Call analyze_issue(image_b64, description, lat, lng, recent_reports)
+190: 5. Call save_to_sheets(analysis, image_url, timestamp)
+191: 6. Return JSON:
+192:    {
+193:      "success": true,
+194:      "report_id": "GH-...",
+195:      "analysis": {...}
+196:    }
+197: 
+198: Also update GET /api/stats to fetch data from Sheets and compute:
+199: - total: count of all issues
+200: - urgent: count of priority='urgent'
+201: - high: count of priority='high'
+202: - resolved: count of status='resolved' / total * 100
+203: 
+204: Return updated app.py."
+205: ```
+206: 
+207: **Local test**:
+208: ```bash
+209: # Use curl to simulate a report
+210: curl -X POST http://localhost:5000/api/report \
+211:   -F "image=@test_pothole.jpg" \
+212:   -F "description=Large pothole on main road" \
+213:   -F "latitude=28.6692" \
+214:   -F "longitude=77.0669"
+215: 
+216: # Should return:
+217: # {"success": true, "report_id": "GH-...", "analysis": {...}}
+218: 
+219: # Verify it appeared in Google Sheets manually
+220: ```
+221: 
+222: **Checkpoint**: 
+223: - ✅ `/api/report` endpoint works end-to-end
+224: - ✅ Image analyzed by Claude agent
+225: - ✅ Result saved to Google Sheets
+226: - ✅ `/api/stats` returns correct counts
+227: 
+228: **Day 1 Deliverable**: Working Flask backend that accepts reports, analyzes with Claude, saves to Sheets
+229: 
+230: ---
+231: 
+232: ### Day 1 Commit
+233: ```bash
+234: git add -A
+235: git commit -m "feat(backend): Flask API + Claude agent + Sheets integration"
+236: git push origin main
+237: ```
+238: 
+239: ---
+240: 
+241: ## 📅 DAY 2: Frontend Dashboard + Real Testing (8–10 hours)
+242: 
+243: ### Hour 0–2: Dashboard Frontend
+244: 
+245: **Tell Claude**:
+246: ```
+247: Build an HTML dashboard for Community Hero.
+248: 
+249: Requirements:
+250: 1. Single file: dashboard.html
+251: 2. Page header:
+252:    - Title: "Community Hero"
+253:    - Subtitle: "AI-Powered Civic Issue Tracking for Ghaziabad"
+254:    - Purple gradient background
+255: 
+256: 3. Layout: 2-column grid (responsive)
+257:    - Left: Google Map (Ghaziabad centered at 28.6692, 77.0669)
+258:    - Right: Issues list + stats
+259: 
+260: 4. Map functionality:
+261:    - Fetch issues from /api/issues
+262:    - Plot markers color-coded by priority:
+263:      - Red: urgent
+264:      - Orange: high
+265:      - Blue: medium
+266:      - Green: low
+267:    - Clicking marker opens infowindow with category + address
+268:    - Clicking on map opens report form
+269: 
+270: 5. Right sidebar:
+271:    - Stats panel (top):
+272:      - Total Issues
+273:      - Urgent Count
+274:      - High Count
+275:      - % Resolved
+276:    - Issues list (scrollable):
+277:      - Each issue card shows: category, priority, description, location
+278:      - Clicking card centers map on that issue
+279:      - Cards colored by priority
+280: 
+281: 6. Report Form (modal):
+282:    - Photo upload
+283:    - Description textarea
+284:    - Location address input
+285:    - Latitude/Longitude inputs
+286:    - Submit button calls POST /api/report
+287:    - Shows "Analyzing..." while waiting
+288:    - Closes on success
+289: 
+290: 7. Styling:
+291:    - Modern, clean, no external UI libraries
+292:    - Responsive (works on mobile)
+293:    - Color-coded by priority
+294:    - Subtle shadows, generous whitespace
+295: 
+296: Google Maps API key: YOUR_KEY_HERE (user will set)
+297: 
+298: Return the complete HTML file."
+299: ```
+300: 
+301: **Validate locally**:
+302: ```bash
+303: # Make sure backend is running on port 5000
+304: # Open dashboard.html in browser
+305: # Should see Ghaziabad map + empty issues list
+306: ```
+307: 
+308: **Checkpoint**: Dashboard loads, map displays Ghaziabad, /api/stats call succeeds
+309: 
+310: ---
+311: 
+312: ### Hour 2–4: Deploy to Live URL
+313: 
+314: **Choose one**:
+315: 
+316: **Option A: Ngrok (Fastest for demo)**
+317: ```bash
+318: # Terminal 1: Backend
+319: cd backend
+320: python app.py
+321: 
+322: # Terminal 2: Ngrok tunnel
+323: ngrok http 5000
+324: # Get URL like: https://a1b2c3d4.ngrok.io
+325: 
+326: # Terminal 3: Update dashboard.html
+327: # Replace: const BACKEND_URL = 'http://localhost:5000';
+328: # With: const BACKEND_URL = 'https://a1b2c3d4.ngrok.io';
+329: 
+330: # Serve dashboard
+331: python -m http.server 8000
+332: # Visit: http://localhost:8000/dashboard.html
+333: ```
+334: 
+335: **Option B: Vercel (More professional)**
+336: ```bash
+337: # Create vercel.json in project root
+338: {
+339:   "buildCommand": "npm install",
+340:   "outputDirectory": "."
+341: }
+342: 
+343: vercel deploy
+344: # Follow prompts, dashboard.html automatically deployed
+345: ```
+346: 
+347: **Checkpoint**: Dashboard accessible from non-localhost URL
+348: 
+349: ---
+350: 
+351: ### Hour 4–6: Test with Real Data
+352: 
+353: Create 5–10 realistic test reports. For each:
+354: 1. Find a real Ghaziabad location (use Google Maps)
+355: 2. Find a realistic issue photo (search "pothole", "water leak", etc.)
+356: 3. Write a description
+357: 4. Submit via dashboard form
+358: 5. Verify in Google Sheet
+359: 6. Check map marker appears
+360: 
+361: **Test cases**:
+362: - [ ] Pothole (severe, urgent) → Sector 7
+363: - [ ] Water leak (medium, high) → Sector 9
+364: - [ ] Streetlight (minor, low) → Sector 11
+365: - [ ] Waste accumulation (severe, urgent) → NH-119 corridor
+366: - [ ] Duplicate detection → Submit same pothole twice from same location
+367: 
+368: **Checkpoint**: 
+369: - ✅ 5+ real issues in Google Sheet
+370: - ✅ All visible on dashboard map
+371: - ✅ Agent correctly categorized each
+372: - ✅ Priorities make sense
+373: 
+374: ---
+375: 
+376: ### Hour 6–8: Extended Thinking (Agentic Depth)
+377: 
+378: **Tell Claude**:
+379: ```
+380: Enhance backend/agent.py to use Claude's extended thinking capability.
+381: 
+382: Update analyze_issue() to:
+383: 1. Add thinking parameter:
+384:    {
+385:      "type": "enabled",
+386:      "budget_tokens": 8000
+387:    }
+388: 
+389: 2. In the prompt, ask Claude to reason about:
+390:    - What specific hazards are visible?
+391:    - Is this a duplicate? (compare to recent_reports)
+392:    - What's the citizen impact?
+393:    - Should this be escalated?
+394:    - Estimated resolution time?
+395: 
+396: 3. Extract thinking from response:
+397:    - response.content includes blocks with type="thinking"
+398:    - Log thinking to logs/agent_reasoning.jsonl for transparency
+399: 
+400: 4. Return enhanced JSON:
+401:    {
+402:      "category": "...",
+403:      "priority": "...",
+404:      ...
+405:      "thinking": "Agent reasoning here...",
+406:      "resolution_estimate_days": 7
+407:    }
+408: 
+409: 5. Update dashboard to show agent reasoning (optional but impressive):
+410:    - Click an issue card → show "Agent Reasoning" section with thinking text
+411: 
+412: Return updated agent.py."
+413: ```
+414: 
+415: **Test**:
+416: ```bash
+417: # Resubmit test issues
+418: # Check logs/agent_reasoning.jsonl has actual reasoning text
+419: # Verify resolution_estimate_days is realistic
+420: ```
+421: 
+422: **Checkpoint**: Agent reasoning visible in logs; dashboard can show thinking (optional UI)
+423: 
+424: ---
+425: 
+426: ### Hour 8–10: Polish & Deploy
+427: 
+428: **Tell Claude**:
+429: ```
+430: Polish the dashboard UI:
+431: 1. Add loading animations (spinner while form submits)
+432: 2. Add success notifications ("Issue submitted! Agent is analyzing...")
+433: 3. Make stats update in real-time (fetch /api/stats every 5 seconds)
+434: 4. Add filters on right sidebar:
+435:    - "Show by priority" dropdown
+436:    - "Show by category" dropdown
+437: 5. Add a "Refresh" button to manually reload issues
+438: 6. Make mobile responsive (test on iPhone mockup)
+439: 
+440: Return updated dashboard.html."
+441: ```
+442: 
+443: **Final deployment**:
+444: ```bash
+445: # If using Vercel:
+446: git add -A
+447: git commit -m "feat(frontend): Dashboard + extended thinking"
+448: vercel deploy
+449: 
+450: # If using Ngrok + local server:
+451: # Keep running locally, share Ngrok URL with judges
+452: ```
+453: 
+454: **Day 2 Deliverable**: Fully functional end-to-end system with 5+ real test cases
+455: 
+456: ---
+457: 
+458: ### Day 2 Commit
+459: ```bash
+460: git add -A
+461: git commit -m "feat(frontend): Dashboard + extended thinking agent"
+462: git push origin main
+463: ```
+464: 
+465: ---
+466: 
+467: ## 📅 DAY 3: Innovation + Differentiators (6–8 hours)
+468: 
+469: ### Hour 0–2: Prediction Layer (Optional +5–10 points)
+470: 
+471: **Tell Claude**:
+472: ```
+473: Add a prediction layer to predict future hotspots.
+474: 
+475: New endpoint: GET /api/predict
+476: 
+477: Should:
+478: 1. Analyze all historical issues in Sheets
+479: 2. Group by location + category
+480: 3. Find patterns (e.g., "Sector 7 has 3+ potholes in 7 days")
+481: 4. Use Claude agent to predict which areas will have issues next
+482: 5. Return JSON:
+483:    {
+484:      "high_risk_locations": [
+485:        {
+486:          "latitude": 28.6692,
+487:          "longitude": 77.0669,
+488:          "category": "pothole",
+489:          "confidence": 0.89,
+490:          "reason": "3 potholes reported in Sector 7 this week; upcoming monsoon increases risk"
+491:        }
+492:      ]
+493:    }
+494: 
+495: Add these predicted locations to dashboard map:
+496: - Plot as dashed/yellow circles (to differentiate from reported issues)
+497: - Label "PREDICTED"
+498: - Show reason on hover
+499: 
+500: Return the code."
+501: ```
+502: 
+503: **Test**:
+504: ```bash
+505: # Visit: /api/predict
+506: # Should return hotspots based on your 5+ test issues
+507: ```
+508: 
+509: **Checkpoint**: Prediction endpoint works; dashboard shows predicted locations
+510: 
+511: ---
+512: 
+513: ### Hour 2–3: Voice Input (Optional +5 points)
+514: 
+515: **Tell Claude**:
+516: ```
+517: Add voice reporting to the dashboard form.
+518: 
+519: In the report form modal, add:
+520: 1. "Record Voice Report" button (next to photo upload)
+521: 2. Click starts recording (Web Speech API)
+522: 3. Transcription appears in description field
+523: 4. User can edit before submitting
+524: 
+525: Use:
+526: - navigator.mediaDevices.getUserMedia() for audio
+527: - Web Speech API (navigator.mediaDevices.getDisplayMedia)
+528: - Or SpeechRecognition API with language='en-IN'
+529: 
+530: Return updated dashboard.html."
+531: ```
+532: 
+533: **Test**:
+534: ```bash
+535: # Open form, click "Record Voice"
+536: # Say: "There's a big pothole on sector 7 main road"
+537: # Should appear in description field
+538: ```
+539: 
+540: **Checkpoint**: Voice recording works; transcribed text appears in form
+541: 
+542: ---
+543: 
+544: ### Hour 3–4: Demo Video (Critical!)
+545: 
+546: **Record a 2–3 minute video**:
+547: 1. **Intro (20 seconds)**:
+548:    - "This is Community Hero, an AI-powered civic issue tracker"
+549:    - Show problem: "Citizens report issues, we need to categorize and prioritize"
+550: 
+551: 2. **Report an issue (40 seconds)**:
+552:    - Open dashboard
+553:    - Click map → open form
+554:    - Upload a photo
+555:    - Write description
+556:    - Submit
+557:    - Show "Agent analyzing..."
+558:    - Show result: priority, category, reasoning
+559: 
+560: 3. **View dashboard (40 seconds)**:
+561:    - Show all issues on map (markers color-coded)
+562:    - Show stats updating in real-time
+563:    - Click an issue → map centers on it
+564:    - Show Google Sheets with raw data (prove transparency)
+565: 
+566: 4. **Show agentic reasoning (20 seconds)**:
+567:    - Click an issue → show "Agent Reasoning" section
+568:    - Read out some of the thinking ("This is a severe pothole based on the image depth...")
+569: 
+570: 5. **Outro (10 seconds)**:
+571:    - "Community Hero uses Claude API for agentic analysis, Google Sheets for transparency, and Google Maps for visualization"
+572: 
+573: **Upload to**:
+574: - YouTube (unlisted)
+575: - Google Drive
+576: - Include link in README
+577: 
+578: ---
+579: 
+580: ### Hour 4–6: Documentation
+581: 
+582: **README.md**:
+583: ```markdown
+584: # Community Hero - AI-Powered Civic Issue Tracker
+585: 
+586: ## Problem
+587: Citizens in Ghaziabad face challenges reporting local infrastructure issues (potholes, water leaks, etc.). Existing systems are fragmented and lack intelligent categorization.
+588: 
+589: ## Solution
+590: Community Hero uses Claude AI to autonomously analyze issue photos, categorize them, determine priority, and recommend actions — all without human intervention.
+591: 
+592: ## Key Features
+593: - **Agentic Analysis**: Claude analyzes images + text to categorize and prioritize issues
+594: - **Extended Thinking**: Agent reasons about context (weather, location, history) before deciding priority
+595: - **Transparent Data**: All issues stored in public Google Sheets, auditable by citizens
+596: - **Real-time Tracking**: Live map and dashboard showing all reported issues
+597: - **Prediction**: AI predicts future hotspots based on patterns
+598: 
+599: ## Tech Stack
+600: - **Backend**: Python Flask + Claude Anthropic API
+601: - **Frontend**: HTML5 + Vanilla JS + Google Maps API
+602: - **Data**: Google Sheets + Google Drive
+603: - **Deployment**: Vercel (frontend) + (local/serverless for backend)
+604: 
+605: ## Quick Start
+606: 
+607: ### Backend
+608: ```bash
+609: cd backend
+610: pip install -r requirements.txt
+611: export ANTHROPIC_API_KEY=sk-...
+612: python app.py
+613: ```
+614: 
+615: ### Frontend
+616: ```bash
+617: # Update BACKEND_URL in dashboard.html
+618: # Open in browser: dashboard.html
+619: ```
+620: 
+621: ### Google Setup
+622: 1. Create Google Cloud project
+623: 2. Enable Drive + Sheets APIs
+624: 3. Create service account, download JSON
+625: 4. Create Google Sheet with columns: Timestamp, Category, Priority, etc.
+626: 5. Share sheet with service account email
+627: 
+628: ## API Endpoints
+629: 
+630: ### POST /api/report
+631: Submit a new civic issue.
+632: 
+633: Request:
+634: ```json
+635: {
+636:   "image": <file>,
+637:   "description": "Large pothole on main road",
+638:   "latitude": 28.6692,
+639:   "longitude": 77.0669
+640: }
+641: ```
+642: 
+643: Response:
+644: ```json
+645: {
+646:   "success": true,
+647:   "report_id": "GH-20260625...",
+648:   "analysis": {
+649:     "category": "pothole",
+650:     "priority": "urgent",
+651:     "severity_score": 4,
+652:     "confidence": 0.95,
+653:     "reasoning": "...",
+654:     "recommended_action": "..."
+655:   }
+656: }
+657: ```
+658: 
+659: ### GET /api/issues
+660: Fetch all issues.
+661: 
+662: Query parameters:
+663: - `category`: pothole|water_leak|streetlight|waste_management
+664: - `priority`: urgent|high|medium|low
+665: 
+666: ### GET /api/stats
+667: Get summary statistics.
+668: 
+669: ### GET /api/predict
+670: Predict high-risk areas for next 7 days.
+671: 
+672: ## Evaluation Evidence
+673: 
+674: ### Problem Solving & Impact (20%)
+675: - Autonomous agent eliminates manual triage
+676: - Issues resolved 3x faster with prioritization
+677: 
+678: ### Agentic Depth (20%)
+679: - Extended thinking: Agent reasons about context
+680: - Tool use: Agent categorizes, prioritizes, escalates
+681: - Duplicate detection: Agent identifies same issues
+682: 
+683: ### Innovation (20%)
+684: - Prediction layer: Forecasts future hotspots
+685: - Voice input: Accessible reporting
+686: 
+687: ### Google Technologies (15%)
+688: - Maps API: Real-time visualization
+689: - Sheets API: Transparent, auditable data storage
+690: - Drive API: Organized image archive
+691: 
+692: ### Product Experience (10%)
+693: - Clean, intuitive dashboard
+694: - Real-time map updates
+695: - Mobile responsive
+696: 
+697: ### Technical Implementation (10%)
+698: - Modular architecture (agent, backend, frontend separate)
+699: - Error handling, logging
+700: - CORS, security
+701: 
+702: ### Completeness (5%)
+703: - Full end-to-end workflow
+704: - Tested with real Ghaziabad data
+705: 
+706: ## Demo
+707: 
+708: Watch demo video: [YouTube link]
+709: 
+710: ## Author
+711: [Your name] - [LinkedIn]
+712: 
+713: ## License
+714: MIT
+715: ```
+716: 
+717: **API.md**:
+718: ```
+719: [Detailed API documentation with examples]
+720: ```
+721: 
+722: **ARCHITECTURE.md**:
+723: ```
+724: [System architecture diagram]
+725: [Data flow explanation]
+726: [Agentic reasoning flowchart]
+727: ```
+728: 
+729: ---
+730: 
+731: ### Hour 6–8: Final Testing + Bug Fixes
+732: 
+733: **Checklist**:
+734: - [ ] Dashboard loads in Chrome, Firefox, Safari
+735: - [ ] Map displays Ghaziabad correctly
+736: - [ ] All 5+ test issues visible on map
+737: - [ ] Form submission works end-to-end
+738: - [ ] Stats update in real-time
+739: - [ ] Google Sheet has all test data
+740: - [ ] Agent reasoning is logical (not random)
+741: - [ ] Predictions make sense
+742: - [ ] Voice input works (if implemented)
+743: - [ ] Video is clear and shows system working
+744: - [ ] GitHub repo has clean commit history
+745: - [ ] README is comprehensive
+746: 
+747: **Bug fixes**:
+748: - If map doesn't load: Check API key in HTML
+749: - If form doesn't submit: Check backend CORS headers
+750: - If Sheets doesn't update: Check service account permissions
+751: 
+752: ---
+753: 
+754: ### Day 3 Deliverable
+755: - ✅ Fully polished system
+756: - ✅ 2–3 minute demo video
+757: - ✅ Comprehensive documentation
+758: - ✅ GitHub repo with 10+ commits
+759: - ✅ Live deployments (Vercel frontend + live backend)
+760: 
+761: ---
+762: 
+763: ### Day 3 Final Commit
+764: ```bash
+765: git add -A
+766: git commit -m "feat(polish): Prediction layer + voice input + documentation + demo video"
+767: git push origin main
+768: ```
+769: 
+770: ---
+771: 
+772: ## 🎯 Submission Checklist
+773: 
+774: ### Code
+775: - [ ] `backend/app.py` — Flask API
+776: - [ ] `backend/agent.py` — Agentic analysis with extended thinking
+777: - [ ] `backend/google_sheets.py` — Data persistence
+778: - [ ] `backend/requirements.txt` — Dependencies
+779: - [ ] `dashboard.html` — Full frontend
+780: - [ ] `README.md` — Comprehensive guide
+781: - [ ] `API.md` — Endpoint documentation
+782: - [ ] `ARCHITECTURE.md` — System design
+783: - [ ] `.env.example` — Template for env vars
+784: - [ ] `.gitignore` — Hide secrets
+785: 
+786: ### Data
+787: - [ ] Google Sheet with 5+ real test issues
+788: - [ ] Google Drive folder with organized images
+789: - [ ] All data publicly accessible (judges can audit)
+790: 
+791: ### Demo
+792: - [ ] 2–3 minute video walkthrough
+793: - [ ] YouTube link (unlisted) or Drive link
+794: - [ ] GitHub link in README
+795: 
+796: ### Deployment
+797: - [ ] Frontend: Vercel URL or Ngrok URL
+798: - [ ] Backend: Live endpoint
+799: - [ ] Both accessible from outside
+800: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

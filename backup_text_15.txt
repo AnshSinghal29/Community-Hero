@@ -1,0 +1,493 @@
+Created At: 2026-06-27T08:17:59Z
+Completed At: 2026-06-27T08:17:59Z
+File Path: `file:///c:/Community%20Hero/frontend/dashboard.html`
+Total Lines: 884
+Total Bytes: 43938
+Showing lines 400 to 884
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+400: 
+401:     const PRIORITY_COLORS = {
+402:       urgent: '#ff4757',
+403:       high:   '#ffa502',
+404:       medium: '#3d9bff',
+405:       low:    '#2ed573'
+406:     };
+407: 
+408:     const CATEGORY_EMOJI = {
+409:       pothole:          '🕳️',
+410:       water_leak:       '💧',
+411:       streetlight:      '💡',
+412:       waste_management: '🗑️',
+413:       other:            '🔧'
+414:     };
+415: 
+416:     // ─────────────────────────────────────────────────────────────
+417:     // MAP INIT — Leaflet + OpenStreetMap (FREE, no API key)
+418:     // ─────────────────────────────────────────────────────────────
+419:     function initMap() {
+420:       map = L.map('map', { zoomControl: true }).setView(GHAZIABAD_CENTER, 13);
+421: 
+422:       // Dark tile layer (CartoDB Dark Matter — free, no API key)
+423:       L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+424:         attribution: '\u00a9 <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors \u00a9 <a href="https://carto.com/">CARTO</a>',
+425:         subdomains: 'abcd',
+426:         maxZoom: 19
+427:       }).addTo(map);
+428: 
+429:       // Click on map → pre-fill coords + open modal
+430:       map.on('click', (e) => {
+431:         document.getElementById('latitude').value  = e.latlng.lat.toFixed(6);
+432:         document.getElementById('longitude').value = e.latlng.lng.toFixed(6);
+433:         openModal();
+434:       });
+435: 
+436:       loadAll();
+437:       startAutoRefresh();
+438:     }
+439: 
+440:     // ─────────────────────────────────────────────────────────────
+441:     // LOAD DATA
+442:     // ─────────────────────────────────────────────────────────────
+443:     async function loadAll() {
+444:       await Promise.all([loadIssues(), loadStats(), loadPredictions()]);
+445:       checkApiHealth();
+446:     }
+447: 
+448:     async function loadIssues() {
+449:       const cat = document.getElementById('filter-category').value;
+450:       const pri = document.getElementById('filter-priority').value;
+451: 
+452:       let url = `${BACKEND_URL}/api/issues`;
+453:       const params = [];
+454:       if (cat) params.push(`category=${cat}`);
+455:       if (pri) params.push(`priority=${pri}`);
+456:       if (params.length) url += '?' + params.join('&');
+457: 
+458:       try {
+459:         const res = await fetch(url);
+460:         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+461:         issues = await res.json();
+462:         renderIssueList(issues);
+463:         renderMarkers(issues);
+464:         document.getElementById('issues-count').textContent = issues.length;
+465:       } catch (e) {
+466:         console.error('[ERROR] Could not load issues:', e);
+467:         renderIssueList([]);
+468:       }
+469:     }
+470: 
+471:     async function loadStats() {
+472:       try {
+473:         const res = await fetch(`${BACKEND_URL}/api/stats`);
+474:         if (!res.ok) throw new Error(`HTTP ${res.status}`);
+475:         const s = await res.json();
+476:         animateNumber('stat-total',    s.total    ?? 0);
+477:         animateNumber('stat-urgent',   s.urgent   ?? 0);
+478:         animateNumber('stat-high',     s.high     ?? 0);
+479:         document.getElementById('stat-resolved').textContent = (s.resolved_pct ?? 0) + '%';
+480:       } catch (e) {
+481:         console.error('[ERROR] Could not load stats:', e);
+482:         ['stat-total','stat-urgent','stat-high','stat-resolved'].forEach(id => {
+483:           document.getElementById(id).textContent = '—';
+484:         });
+485:       }
+486:     }
+487: 
+488:     async function loadPredictions() {
+489:       try {
+490:         const res = await fetch(`${BACKEND_URL}/api/predict`);
+491:         if (!res.ok) return;
+492:         const data = await res.json();
+493:         renderPredictions(data.high_risk_locations || []);
+494:       } catch (e) {
+495:         // Predictions are optional
+496:       }
+497:     }
+498: 
+499:     async function checkApiHealth() {
+500:       try {
+501:         const res = await fetch(`${BACKEND_URL}/api/health`);
+502:         const dot = document.getElementById('api-status-dot');
+503:         const txt = document.getElementById('api-status-text');
+504:         if (res.ok) {
+505:           dot.style.background = '#2ed573';
+506:           txt.textContent = 'API Online';
+507:         } else {
+508:           dot.style.background = '#ff4757';
+509:           txt.textContent = 'API Error';
+510:         }
+511:       } catch {
+512:         document.getElementById('api-status-dot').style.background = '#ffa502';
+513:         document.getElementById('api-status-text').textContent = 'Backend Offline';
+514:       }
+515:     }
+516: 
+517:     function startAutoRefresh() {
+518:       autoRefreshTimer = setInterval(() => {
+519:         loadStats();
+520:         loadIssues();
+521:       }, 5000);
+522:     }
+523: 
+524:     // ─────────────────────────────────────────────────────────────
+525:     // RENDER ISSUES LIST
+526:     // ─────────────────────────────────────────────────────────────
+527:     function renderIssueList(list) {
+528:       const container = document.getElementById('issues-list');
+529: 
+530:       if (list.length === 0) {
+531:         container.innerHTML = `
+532:           <div class="empty-state">
+533:             <div class="empty-icon">🗺️</div>
+534:             <div class="empty-text">No issues found.<br>Click the map or "Report New Issue" to add one.</div>
+535:           </div>`;
+536:         return;
+537:       }
+538: 
+539:       container.innerHTML = '';
+540: 
+541:       list.forEach((issue, idx) => {
+542:         const emoji = CATEGORY_EMOJI[issue.category] || '🔧';
+543:         const catLabel = (issue.category || 'other').replace(/_/g, ' ');
+544:         const ts = issue.timestamp ? new Date(issue.timestamp).toLocaleDateString('en-IN', { day:'numeric', month:'short' }) : '';
+545: 
+546:         
+547:         const colorClass = issue.priority === 'urgent' ? 'urgent' : issue.priority === 'high' ? 'high' : issue.priority === 'medium' ? 'medium' : 'low';
+548:         card.className = `glass-panel p-4 rounded-xl border-l-4 border-l-${colorClass} relative overflow-hidden group hover:bg-surface-container-highest transition-colors cursor-pointer`;
+549:         card.id = `issue-card-${idx}`;
+550:         card.innerHTML = `
+551: <div class="flex justify-between items-start mb-2">
+552:   <span class="bg-${colorClass}/20 text-${colorClass} text-tiny-heavy px-2 py-0.5 rounded uppercase tracking-wider">${issue.priority}</span>
+553:   <span class="text-meta-bold text-text-muted">${ts}</span>
+554: </div>
+555: <h3 class="text-body-lg font-body-lg mb-1">${emoji} ${catLabel}</h3>
+556: <p class="text-body-base text-text-muted line-clamp-2">${issue.description || 'No description'}</p>
+557:         `;
+558:         
+559:         if (issue.reasoning) {
+560:           const rDrawer = document.createElement('div');
+561:           rDrawer.className = 'mt-4 p-2 bg-surface-container-lowest/50 rounded-lg border border-border/50 hidden';
+562:           rDrawer.id = `reasoning-${idx}`;
+563:           rDrawer.innerHTML = `
+564: <div class="flex items-center gap-2 text-primary-fixed font-meta-bold text-meta-bold mb-1">
+565:   <span class="material-symbols-outlined text-[14px]">psychology</span> AI REASONING
+566: </div>
+567: <p class="text-[11px] leading-relaxed text-text-muted italic">"${issue.reasoning}"</p>
+568:           `;
+569:           card.appendChild(rDrawer);
+570:           
+571:           
+572:         }
+573:     
+574: 
+575:         
+576: 
+577:         
+578: 
+579:         container.appendChild(card);
+580:         
+581:       });
+582:     }
+583: 
+584:     // ─────────────────────────────────────────────────────────────
+585:     // RENDER MAP MARKERS (Leaflet circleMarkers)
+586:     // ─────────────────────────────────────────────────────────────
+587:     function renderMarkers(list) {
+588:       markers.forEach(m => map.removeLayer(m));
+589:       markers = [];
+590: 
+591:       list.forEach(issue => {
+592:         const lat = parseFloat(issue.latitude);
+593:         const lng = parseFloat(issue.longitude);
+594:         if (!lat || !lng) return;
+595: 
+596:         const color = PRIORITY_COLORS[issue.priority] || '#888';
+597:         const emoji = CATEGORY_EMOJI[issue.category] || '🔧';
+598:         const catLabel = (issue.category || 'other').replace(/_/g, ' ');
+599: 
+600:         const marker = L.circleMarker([lat, lng], {
+601:           radius: 11,
+602:           fillColor: color,
+603:           color: '#ffffff',
+604:           weight: 2,
+605:           opacity: 0.9,
+606:           fillOpacity: 0.85
+607:         }).bindPopup(`
+608:           <div style="font-family:Inter,sans-serif;padding:4px 0;min-width:180px">
+609:             <strong>${emoji} ${catLabel}</strong>
+610:             <div style="margin-top:4px;font-size:12px;color:#555">${issue.address || 'No address'}</div>
+611:             <div style="margin-top:6px">
+612:               <span style="background:${color};color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;text-transform:uppercase">${issue.priority}</span>
+613:             </div>
+614:             ${issue.reasoning ? `<div style="margin-top:8px;font-size:11px;color:#777;line-height:1.4">${issue.reasoning.slice(0,120)}...</div>` : ''}
+615:           </div>
+616:         `);
+617: 
+618:         marker.addTo(map);
+619:         markers.push(marker);
+620:       });
+621:     }
+622: 
+623:     // ─────────────────────────────────────────────────────────────
+624:     // RENDER PREDICTIONS (Leaflet circles — dashed yellow)
+625:     // ─────────────────────────────────────────────────────────────
+626:     function renderPredictions(predictions) {
+627:       predictionOverlays.forEach(o => map.removeLayer(o));
+628:       predictionOverlays = [];
+629: 
+630:       predictions.forEach(p => {
+631:         const lat = parseFloat(p.latitude);
+632:         const lng = parseFloat(p.longitude);
+633: 
+634:         const circle = L.circle([lat, lng], {
+635:           radius: 80,
+636:           color: '#ffd700',
+637:           weight: 2,
+638:           dashArray: '6 4',
+639:           fillColor: '#ffd700',
+640:           fillOpacity: 0.08
+641:         }).bindPopup(`
+642:           <div style="font-family:Inter,sans-serif;padding:4px 0">
+643:             <strong>⚠️ Predicted Risk: ${p.category}</strong>
+644:             <div style="margin-top:4px;font-size:12px;color:#555">${p.reason || ''}</div>
+645:             <div style="margin-top:6px;font-size:11px">Confidence: ${Math.round((p.confidence||0)*100)}%</div>
+646:           </div>
+647:         `);
+648: 
+649:         // Yellow 'P' label marker
+650:         const icon = L.divIcon({
+651:           className: '',
+652:           html: `<div style="width:22px;height:22px;border-radius:50%;border:2px solid #ffd700;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#ffd700;background:rgba(0,0,0,.5)">P</div>`,
+653:           iconSize: [22, 22],
+654:           iconAnchor: [11, 11]
+655:         });
+656:         const marker = L.marker([lat, lng], { icon }).bindPopup(`
+657:           <div style="font-family:Inter,sans-serif;padding:4px 0">
+658:             <strong>⚠️ Predicted Risk: ${p.category}</strong>
+659:             <div style="margin-top:4px;font-size:12px;color:#555">${p.reason || ''}</div>
+660:             <div style="margin-top:6px;font-size:11px">Confidence: ${Math.round((p.confidence||0)*100)}%</div>
+661:           </div>
+662:         `);
+663: 
+664:         circle.addTo(map);
+665:         marker.addTo(map);
+666:         predictionOverlays.push(circle, marker);
+667:       });
+668:     }
+669: 
+670:     // ─────────────────────────────────────────────────────────────
+671:     // REPORT FORM
+672:     // ─────────────────────────────────────────────────────────────
+673:     function openModal() {
+674:       document.getElementById('modal').classList.add('open');
+675:       document.getElementById('analysis-result').style.display = 'none';
+676:       document.getElementById('report-form').style.display = '';
+677:     }
+678: 
+679:     function closeModal() {
+680:       document.getElementById('modal').classList.remove('open');
+681:       document.getElementById('report-form').reset();
+682:       document.getElementById('img-preview').style.display = 'none';
+683:       document.getElementById('analysis-result').style.display = 'none';
+684:     }
+685: 
+686:     document.getElementById('btn-report').addEventListener('click', openModal);
+687:     document.getElementById('modal-close').addEventListener('click', closeModal);
+688:     document.getElementById('modal').addEventListener('click', (e) => {
+689:       if (e.target === document.getElementById('modal')) closeModal();
+690:     });
+691: 
+692:     // Image preview
+693:     document.getElementById('image').addEventListener('change', (e) => {
+694:       const file = e.target.files[0];
+695:       if (!file) return;
+696:       const url = URL.createObjectURL(file);
+697:       document.getElementById('img-preview-src').src = url;
+698:       document.getElementById('img-preview').style.display = 'block';
+699:     });
+700: 
+701:     // Form submit
+702:     document.getElementById('report-form').addEventListener('submit', async (e) => {
+703:       e.preventDefault();
+704: 
+705:       const image = document.getElementById('image').files[0];
+706:       const desc  = document.getElementById('description').value.trim();
+707:       const lat   = document.getElementById('latitude').value;
+708:       const lng   = document.getElementById('longitude').value;
+709: 
+710:       if (!image) return showToast('error', 'Missing Image', 'Please select a photo of the issue.');
+711:       if (!desc)  return showToast('error', 'Missing Description', 'Please describe the issue.');
+712:       if (!lat || !lng) return showToast('error', 'Missing Location', 'Please set a location (click the map or enter coordinates).');
+713: 
+714:       setSubmitting(true);
+715: 
+716:       const formData = new FormData();
+717:       formData.append('image', image);
+718:       formData.append('description', desc);
+719:       formData.append('latitude', lat);
+720:       formData.append('longitude', lng);
+721:       formData.append('address', document.getElementById('address').value.trim());
+722: 
+723:       try {
+724:         const res = await fetch(`${BACKEND_URL}/api/report`, {
+725:           method: 'POST',
+726:           body: formData
+727:         });
+728: 
+729:         const data = await res.json();
+730: 
+731:         if (data.success) {
+732:           showAnalysisResult(data.analysis);
+733:           showToast('success', 'Issue Reported!', `ID: ${data.report_id} — Priority: ${data.analysis?.priority || '?'}`);
+734:           document.getElementById('report-form').style.display = 'none';
+735: 
+736:           // Refresh data
+737:           setTimeout(() => { loadIssues(); loadStats(); }, 1000);
+738:         } else {
+739:           showToast('error', 'Submission Failed', data.error || 'Unknown error');
+740:         }
+741:       } catch (err) {
+742:         showToast('error', 'Network Error', err.message);
+743:       } finally {
+744:         setSubmitting(false);
+745:       }
+746:     });
+747: 
+748:     function setSubmitting(loading) {
+749:       const btn = document.getElementById('btn-submit');
+750:       const spinner = document.getElementById('spinner');
+751:       const btnText = document.getElementById('btn-text');
+752:       btn.disabled = loading;
+753:       spinner.style.display = loading ? 'block' : 'none';
+754:       btnText.textContent = loading ? 'Analyzing with Claude AI...' : '🚀 Analyze & Submit';
+755:     }
+756: 
+757:     function showAnalysisResult(analysis) {
+758:       if (!analysis) return;
+759:       const r = document.getElementById('analysis-result');
+760:       r.style.display = 'block';
+761: 
+762:       document.getElementById('res-category').textContent = (analysis.category || '—').replace(/_/g, ' ');
+763:       document.getElementById('res-priority').innerHTML = `<span class="badge badge-${analysis.priority}">${analysis.priority || '—'}</span>`;
+764:       document.getElementById('res-severity').textContent = `${analysis.severity_score || '—'}/5`;
+765:       document.getElementById('res-confidence').textContent = analysis.confidence_overall ? Math.round(analysis.confidence_overall * 100) + '%' : '—';
+766:       document.getElementById('res-reasoning').textContent = analysis.reasoning || '';
+767:     }
+768: 
+769:     // ─────────────────────────────────────────────────────────────
+770:     // VOICE INPUT
+771:     // ─────────────────────────────────────────────────────────────
+772:     (function setupVoice() {
+773:       const btn = document.getElementById('btn-voice');
+774:       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+775: 
+776:       if (!SpeechRecognition) {
+777:         btn.title = 'Voice not supported in this browser';
+778:         btn.style.opacity = '.4';
+779:         return;
+780:       }
+781: 
+782:       const recognition = new SpeechRecognition();
+783:       recognition.lang = 'en-IN';
+784:       recognition.continuous = false;
+785:       recognition.interimResults = false;
+786: 
+787:       let recording = false;
+788: 
+789:       btn.addEventListener('click', () => {
+790:         if (recording) {
+791:           recognition.stop();
+792:         } else {
+793:           recognition.start();
+794:           btn.classList.add('recording');
+795:           btn.title = 'Recording... Click to stop';
+796:           recording = true;
+797:         }
+798:       });
+799: 
+800:       recognition.onresult = (e) => {
+801:         const transcript = e.results[0][0].transcript;
+802:         document.getElementById('description').value = transcript;
+803:         showToast('info', 'Voice Captured', `"${transcript.slice(0,80)}${transcript.length > 80 ? '...' : ''}"`);
+804:       };
+805: 
+806:       recognition.onend = () => {
+807:         btn.classList.remove('recording');
+808:         btn.title = 'Record voice report';
+809:         recording = false;
+810:       };
+811: 
+812:       recognition.onerror = (e) => {
+813:         btn.classList.remove('recording');
+814:         recording = false;
+815:         if (e.error !== 'no-speech') {
+816:           showToast('error', 'Voice Error', e.error);
+817:         }
+818:       };
+819:     })();
+820: 
+821:     // ─────────────────────────────────────────────────────────────
+822:     // FILTERS
+823:     // ─────────────────────────────────────────────────────────────
+824:     document.getElementById('filter-priority').addEventListener('change', loadIssues);
+825:     document.getElementById('filter-category').addEventListener('change', loadIssues);
+826: 
+827:     // ─────────────────────────────────────────────────────────────
+828:     // TOAST NOTIFICATIONS
+829:     // ─────────────────────────────────────────────────────────────
+830:     function showToast(type, title, msg) {
+831:       const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
+832:       const container = document.getElementById('toast-container');
+833: 
+834:       
+835:       const toast = document.createElement('div');
+836:       toast.className = 'glass-panel p-4 rounded-xl border border-border shadow-[0_4px_24px_rgba(0,0,0,0.4)] flex gap-3 animate-bounce';
+837:       toast.innerHTML = `
+838:         <span class="text-2xl">${icons[type] || 'ℹ️'}</span>
+839:         <div>
+840:           <div class="font-headline-sm text-headline-sm text-on-surface">${title}</div>
+841:           <div class="font-body-base text-body-base text-text-muted">${msg}</div>
+842:         </div>
+843:       `;
+844:     
+845: 
+846:       container.appendChild(toast);
+847: 
+848:       setTimeout(() => {
+849:         toast.classList.add('removing');
+850:         setTimeout(() => toast.remove(), 250);
+851:       }, 4000);
+852:     }
+853: 
+854:     // ─────────────────────────────────────────────────────────────
+855:     // HELPERS
+856:     // ─────────────────────────────────────────────────────────────
+857:     function animateNumber(id, target) {
+858:       const el = document.getElementById(id);
+859:       const current = parseInt(el.textContent) || 0;
+860:       if (current === target) return;
+861:       const step = target > current ? 1 : -1;
+862:       const steps = Math.min(Math.abs(target - current), 30);
+863:       let i = 0;
+864:       const timer = setInterval(() => {
+865:         el.textContent = Math.round(current + (step * (i / steps) * Math.abs(target - current)));
+866:         if (++i > steps) { el.textContent = target; clearInterval(timer); }
+867:       }, 20);
+868:     }
+869: 
+870:   </script>
+871: <!-- Footer predicted from JSON -->
+872: <footer class="fixed bottom-0 w-full py-4 bg-surface-container-lowest border-t border-border/50 flex flex-row justify-between items-center px-layout-margin z-50">
+873: <div class="text-text-muted font-meta-bold text-meta-bold">
+874:       © 2024 Community Hero Ops Hub • System v4.0.2
+875:     </div>
+876: <div class="flex gap-6">
+877: <a class="text-text-muted font-meta-bold text-meta-bold hover:text-on-surface transition-opacity" href="#">Protocol</a>
+878: <a class="text-text-muted font-meta-bold text-meta-bold hover:text-on-surface transition-opacity" href="#">Privacy</a>
+879: <a class="text-text-muted font-meta-bold text-meta-bold hover:text-on-surface transition-opacity" href="#">Security</a>
+880: <a class="text-text-muted font-meta-bold text-meta-bold hover:text-on-surface transition-opacity" href="#">Contact</a>
+881: </div>
+882: </footer>
+883: <div id="toast-container" class="fixed bottom-20 right-6 z-[3000] flex flex-col gap-2"></div>
+884: </body></html>
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
